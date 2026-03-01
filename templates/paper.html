@@ -10,8 +10,15 @@
   <body>
     <main>
       <h1>{{title}}</h1>
-
-      {{author}}
+      <p class="links">
+        <a href="{{link}}">{{publisher}}</a>
+      </p>
+      <ul class="authors">
+        {% for auth in author %}
+        <li>{{auth.given}} {{auth.family}}</li>
+        {% endfor %}
+      </ul>
+      <p class="abstract">{{abstract}}</p>
     </main>
   </body>
 </html>
