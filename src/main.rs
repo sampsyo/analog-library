@@ -1,12 +1,17 @@
 use axum::{
     Router,
-    extract::Path,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::get,
 };
 use basset::assets;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
+use sled::transaction::TransactionResult;
+use std::convert::Infallible;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+const CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24);
 
 assets!(ASSETS, "assets", ["style.css"]);
 
@@ -71,23 +76,67 @@ impl IntoResponse for MyError {
     }
 }
 
-async fn fetch_doi(doi: &str) -> Result<DOIData, MyError> {
+fn cache_get(db: &sled::Db, url: &str) -> TransactionResult<Option<sled::IVec>, Infallible> {
+    let ts_key = format!("ts:{url}");
+
+    db.transaction(|tx| {
+        match tx.get(ts_key.as_bytes())? {
+            None => Ok(None),
+            Some(ts_data) => {
+                let ts = u64::from_le_bytes(ts_data.as_ref().try_into().unwrap());
+                let time = UNIX_EPOCH + Duration::from_secs(ts);
+
+                // Is the cache entry expired?
+                let age = SystemTime::now().duration_since(time).unwrap();
+                if age > CACHE_EXPIRE {
+                    tx.remove(ts_key.as_bytes())?;
+                    tx.remove(url)?;
+                    return Ok(None);
+                }
+
+                // Load the non-expired data.
+                Ok(tx.get(url)?)
+            }
+        }
+    })
+}
+
+fn cache_set(db: &sled::Db, url: &str, body: &[u8]) -> TransactionResult<(), Infallible> {
+    let ts_key = format!("ts:{url}");
+    let ts_data = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        .to_le_bytes();
+
+    db.transaction(|tx| {
+        tx.insert(ts_key.as_bytes(), &ts_data)?;
+        tx.insert(url, body)?;
+        Ok(())
+    })
+}
+
+async fn fetch_doi(db: sled::Db, doi: &str) -> Result<DOIData, MyError> {
     // TODO validate DOI
     let doi_url = format!("https://doi.org/{doi}");
 
-    // TODO cache results
-    let client = reqwest::Client::new();
-    let body = client
-        .get(doi_url)
-        .header("Accept", "application/json")
-        .send()
-        .await
-        .map_err(|_| MyError::Fetch)?
-        .bytes()
-        .await
-        .map_err(|_| MyError::Fetch)?;
-
-    serde_json::from_slice(&body).map_err(|e| MyError::Parse(e))
+    match cache_get(&db, &doi_url).expect("cache error") {
+        Some(body) => serde_json::from_slice(&body).map_err(|e| MyError::Parse(e)),
+        None => {
+            let client = reqwest::Client::new();
+            let body = client
+                .get(&doi_url)
+                .header("Accept", "application/json")
+                .send()
+                .await
+                .map_err(|_| MyError::Fetch)?
+                .bytes()
+                .await
+                .map_err(|_| MyError::Fetch)?;
+            cache_set(&db, &doi_url, body.as_ref()).expect("cache error");
+            serde_json::from_slice(&body).map_err(|e| MyError::Parse(e))
+        }
+    }
 }
 
 fn paper_page(paper: DOIData) -> Markup {
@@ -115,16 +164,19 @@ fn paper_page(paper: DOIData) -> Markup {
     }
 }
 
-async fn paper(Path(doi): Path<String>) -> Result<Markup, MyError> {
-    let doi_data = fetch_doi(&doi).await?;
+async fn paper(State(db): State<sled::Db>, Path(doi): Path<String>) -> Result<Markup, MyError> {
+    let doi_data = fetch_doi(db, &doi).await?;
     Ok(paper_page(doi_data))
 }
 
 #[tokio::main]
 async fn main() {
+    let db = sled::open("cache.db").unwrap();
+
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
-        .route("/doi/{*doi}", get(paper));
+        .route("/doi/{*doi}", get(paper))
+        .with_state(db);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8118").await.unwrap();
     axum::serve(listener, app).await.unwrap();
