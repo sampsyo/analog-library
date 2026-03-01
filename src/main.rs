@@ -1,13 +1,14 @@
 use axum::{
     Router,
-    extract::{Path, State},
+    extract::Path,
     http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    response::{IntoResponse, Response},
     routing::get,
 };
 use basset::assets;
+use maud::{DOCTYPE, Markup, PreEscaped, html};
 
-assets!(TEMPLATES, "templates", ["paper.html", "style.css"]);
+assets!(ASSETS, "assets", ["style.css"]);
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -56,7 +57,6 @@ struct DOIAffiliation {
 enum MyError {
     Fetch,
     Parse(serde_json::Error),
-    Render,
 }
 
 impl IntoResponse for MyError {
@@ -64,7 +64,6 @@ impl IntoResponse for MyError {
         let body = match self {
             MyError::Fetch => "failed to retrieve data from doi.org".to_string(),
             MyError::Parse(e) => format!("could not parse doi.org response: {e}"),
-            MyError::Render => "page rendering failed".to_string(),
         };
 
         // it's often easiest to implement `IntoResponse` by calling other implementations
@@ -91,52 +90,41 @@ async fn fetch_doi(doi: &str) -> Result<DOIData, MyError> {
     serde_json::from_slice(&body).map_err(|e| MyError::Parse(e))
 }
 
-async fn paper(State(ctx): State<Context>, Path(doi): Path<String>) -> Result<Response, MyError> {
-    let doi_data = fetch_doi(&doi).await?;
-
-    // Render the page.
-    let tmpl = ctx
-        .tmpls
-        .get_template("paper.html")
-        .expect("template must exist");
-    let body = tmpl.render(doi_data).map_err(|_| MyError::Render);
-
-    Ok(Html(body).into_response())
-}
-
-#[derive(Clone)]
-struct Context {
-    tmpls: minijinja::Environment<'static>,
-}
-
-fn templates() -> minijinja::Environment<'static> {
-    let mut env = minijinja::Environment::new();
-
-    // Register embedded templates, which are available in release mode.
+fn paper_page(paper: DOIData) -> Markup {
     #[cfg(not(debug_assertions))]
-    for (name, source) in TEMPLATES.contents() {
-        env.add_template(name, source)
-            .expect("error in embedded template");
-    }
+    let css = ASSETS.get("style.css").expect("asset must exist");
 
-    // In debug mode only, load templates directly from the filesystem.
     #[cfg(debug_assertions)]
-    for (name, source) in TEMPLATES.read_all() {
-        env.add_template_owned(name, source.expect("error reading template"))
-            .expect("error in loaded template");
-    }
+    let css = ASSETS.read("style.css").expect("asset must exist").unwrap();
 
-    env
+    html! {
+        (DOCTYPE)
+        html {
+            head {
+                meta charset="utf-8";
+                title { (paper.title) };
+                style { (PreEscaped(css)) };
+            }
+        }
+        body {
+            main {
+                h1 { (paper.title) };
+                p.abstract { (paper.abstract_) };
+            }
+        }
+    }
+}
+
+async fn paper(Path(doi): Path<String>) -> Result<Markup, MyError> {
+    let doi_data = fetch_doi(&doi).await?;
+    Ok(paper_page(doi_data))
 }
 
 #[tokio::main]
 async fn main() {
-    let ctx = Context { tmpls: templates() };
-
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
-        .route("/doi/{*doi}", get(paper))
-        .with_state(ctx);
+        .route("/doi/{*doi}", get(paper));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8118").await.unwrap();
     axum::serve(listener, app).await.unwrap();
