@@ -82,23 +82,22 @@ fn cache_get(db: &sled::Db, url: &str) -> TransactionResult<Option<sled::IVec>, 
     let ts_key = format!("ts:{url}");
 
     db.transaction(|tx| {
-        match tx.get(ts_key.as_bytes())? {
-            None => Ok(None),
-            Some(ts_data) => {
-                let ts = u64::from_le_bytes(ts_data.as_ref().try_into().unwrap());
-                let time = UNIX_EPOCH + Duration::from_secs(ts);
+        if let Some(ts_data) = tx.get(ts_key.as_bytes())? {
+            let ts = u64::from_le_bytes(ts_data.as_ref().try_into().unwrap());
+            let time = UNIX_EPOCH + Duration::from_secs(ts);
 
-                // Is the cache entry expired?
-                let age = SystemTime::now().duration_since(time).unwrap();
-                if age > CACHE_EXPIRE {
-                    tx.remove(ts_key.as_bytes())?;
-                    tx.remove(url)?;
-                    return Ok(None);
-                }
-
-                // Load the non-expired data.
+            // Is the cache entry expired?
+            let age = SystemTime::now().duration_since(time).unwrap();
+            if age > CACHE_EXPIRE {
+                tx.remove(ts_key.as_bytes())?;
+                tx.remove(url)?;
+                Ok(None)
+            } else {
                 Ok(tx.get(url)?)
             }
+        } else {
+            // Cold miss.
+            Ok(None)
         }
     })
 }
@@ -122,23 +121,24 @@ async fn fetch_doi(db: sled::Db, doi: &str) -> Result<DOIData, DullError> {
     // TODO validate DOI
     let doi_url = format!("https://doi.org/{doi}");
 
-    match cache_get(&db, &doi_url).map_err(|_| DullError::Cache)? {
-        Some(body) => serde_json::from_slice(&body).map_err(DullError::Parse),
-        None => {
-            let client = reqwest::Client::new();
-            let body = client
-                .get(&doi_url)
-                .header("Accept", "application/json")
-                .send()
-                .await
-                .map_err(|_| DullError::Fetch)?
-                .bytes()
-                .await
-                .map_err(|_| DullError::Fetch)?;
-            cache_set(&db, &doi_url, body.as_ref()).map_err(|_| DullError::Cache)?;
-            serde_json::from_slice(&body).map_err(DullError::Parse)
-        }
+    // Cache hit.
+    if let Some(body) = cache_get(&db, &doi_url).map_err(|_| DullError::Cache)? {
+        return serde_json::from_slice(&body).map_err(DullError::Parse);
     }
+
+    // Cache miss.
+    let client = reqwest::Client::new();
+    let body = client
+        .get(&doi_url)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|_| DullError::Fetch)?
+        .bytes()
+        .await
+        .map_err(|_| DullError::Fetch)?;
+    cache_set(&db, &doi_url, body.as_ref()).map_err(|_| DullError::Cache)?;
+    serde_json::from_slice(&body).map_err(DullError::Parse)
 }
 
 fn paper_page(paper: DOIData) -> Markup {
