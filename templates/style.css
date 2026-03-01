@@ -1,0 +1,71 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+
+  display: grid;
+  grid-template-columns: 0.1fr 2fr 0.1fr;
+  gap: 0;
+
+  --theme-color: rgb(179, 27, 27);
+  --mono-font:
+    ui-monospace, SF Mono, "Anonymous Pro", Inconsolata, Consolas,
+    "Source Code Pro", Menlo, Monaco, monospace;
+  --mono-size: 13.5px;
+}
+
+main {
+  grid-column: 2;
+  grid-row: 1;
+
+  /* Unintuitively, this fixes an issue where <pre> would "expand"
+     the column to be too wide. */
+  min-width: 0;
+
+  p,
+  ul,
+  ol {
+    line-height: 1.7;
+  }
+
+  a:link {
+    color: var(--theme-color);
+    text-decoration-thickness: 2%;
+  }
+  a:visited {
+    color: var(--theme-color);
+  }
+
+  pre,
+  code {
+    font-family: var(--mono-font);
+    font-size: var(--mono-size);
+  }
+  code {
+    background: rgba(175, 184, 193, 0.2);
+  }
+  pre code {
+    display: block;
+    border-radius: 3px;
+
+    /* "Margin bleed" for the background. */
+    padding: 8px;
+    margin-left: -8px;
+    margin-right: -8px;
+
+    /* Make <pre> code scroll horizontally when it's too wide. */
+    overflow-x: auto;
+    word-wrap: normal;
+    white-space: pre;
+  }
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: black;
+    color: white;
+    --theme-color: rgb(218, 60, 63);
+    --faded-color: #aaa;
+    --more-faded-color: #eee;
+  }
+}

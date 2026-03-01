@@ -1,18 +1,23 @@
 use axum::{
     Router,
     extract::{Path, State},
+    http::StatusCode,
+    response::{Html, IntoResponse, Response},
     routing::get,
 };
 use basset::assets;
 
-assets!(TEMPLATES, "templates", ["paper.html"]);
+assets!(TEMPLATES, "templates", ["paper.html", "style.css"]);
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct DOIData {
     title: String,
 }
 
-async fn show_doi(State(ctx): State<Context>, Path(doi): Path<String>) -> String {
+async fn paper(
+    State(ctx): State<Context>,
+    Path(doi): Path<String>,
+) -> Result<Response, (StatusCode, String)> {
     // TODO validate DOI
     let doi_url = format!("https://doi.org/{doi}");
 
@@ -31,7 +36,9 @@ async fn show_doi(State(ctx): State<Context>, Path(doi): Path<String>) -> String
 
     // Render the page. TODO handle errors.
     let tmpl = ctx.tmpls.get_template("paper.html").unwrap();
-    tmpl.render(doi_data).unwrap()
+    let body = tmpl.render(doi_data).unwrap();
+
+    Ok(Html(body).into_response())
 }
 
 #[derive(Clone)]
@@ -65,7 +72,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
-        .route("/doi/{*doi}", get(show_doi))
+        .route("/doi/{*doi}", get(paper))
         .with_state(ctx);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8118").await.unwrap();

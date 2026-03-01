@@ -1,1 +1,15 @@
-hello to paper {{title}}
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ title }}</title>
+    <style>
+      {% include "style.css" without context %}
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>{{title}}</h1>
+    </main>
+  </body>
+</html>
