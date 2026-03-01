@@ -77,7 +77,19 @@ impl IntoResponse for DullError {
     }
 }
 
-fn cache_get(db: &sled::Db, url: &str) -> TransactionResult<Option<sled::IVec>, Infallible> {
+enum Cached<T> {
+    /// We're caching actual contents.
+    Valid(T),
+
+    /// The cache entry is missing or expired.
+    Invalid,
+
+    /// The cache entry is present and fresh, but represents an error.
+    Error,
+}
+
+/// Get the current cached URL contents.
+fn cache_get(db: &sled::Db, url: &str) -> TransactionResult<Cached<sled::IVec>, Infallible> {
     let ts_key = format!("ts:{url}");
 
     db.transaction(|tx| {
@@ -90,18 +102,22 @@ fn cache_get(db: &sled::Db, url: &str) -> TransactionResult<Option<sled::IVec>, 
             if age > CACHE_EXPIRE {
                 tx.remove(ts_key.as_bytes())?;
                 tx.remove(url)?;
-                Ok(None)
+                Ok(Cached::Invalid)
             } else {
-                Ok(tx.get(url)?)
+                match tx.get(url)? {
+                    Some(body) => Ok(Cached::Valid(body)),
+                    None => Ok(Cached::Error),
+                }
             }
         } else {
             // Cold miss.
-            Ok(None)
+            Ok(Cached::Invalid)
         }
     })
 }
 
-fn cache_set(db: &sled::Db, url: &str, body: &[u8]) -> TransactionResult<(), Infallible> {
+/// Set the current cached contents of the URL.
+fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> TransactionResult<(), Infallible> {
     let ts_key = format!("ts:{url}");
     let ts_data = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -111,7 +127,11 @@ fn cache_set(db: &sled::Db, url: &str, body: &[u8]) -> TransactionResult<(), Inf
 
     db.transaction(|tx| {
         tx.insert(ts_key.as_bytes(), &ts_data)?;
-        tx.insert(url, body)?;
+        match body {
+            Cached::Valid(data) => tx.insert(url, data)?,
+            Cached::Error => tx.remove(url)?, // Missing contents indicates error.
+            Cached::Invalid => unimplemented!(),
+        };
         Ok(())
     })
 }
@@ -137,26 +157,28 @@ async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<DOIData>, DullError
     }
     let doi_url = format!("https://doi.org/{doi}");
 
-    // Cache hit.
-    if let Some(body) = cache_get(&db, &doi_url).map_err(|_| DullError::Cache)? {
-        return serde_json::from_slice(&body).map_err(DullError::Parse);
-    }
-
-    // Cache miss.
-    let client = reqwest::Client::new();
-    let res = client
-        .get(&doi_url)
-        .header("Accept", "application/json")
-        .send()
-        .await
-        .map_err(|_| DullError::Fetch)?;
-    if res.status() == StatusCode::OK {
-        let body = res.bytes().await.map_err(|_| DullError::Fetch)?;
-        cache_set(&db, &doi_url, body.as_ref()).map_err(|_| DullError::Cache)?;
-        serde_json::from_slice(&body).map_err(DullError::Parse)
-    } else {
-        // TODO cache the error?
-        Ok(None)
+    match cache_get(&db, &doi_url).map_err(|_| DullError::Cache)? {
+        Cached::Valid(body) => serde_json::from_slice(&body).map_err(DullError::Parse),
+        Cached::Error => Ok(None),
+        Cached::Invalid => {
+            // Cache miss.
+            let client = reqwest::Client::new();
+            let res = client
+                .get(&doi_url)
+                .header("Accept", "application/json")
+                .send()
+                .await
+                .map_err(|_| DullError::Fetch)?;
+            if res.status() == StatusCode::OK {
+                let body = res.bytes().await.map_err(|_| DullError::Fetch)?;
+                cache_set(&db, &doi_url, Cached::Valid(body.as_ref()))
+                    .map_err(|_| DullError::Cache)?;
+                serde_json::from_slice(&body).map_err(DullError::Parse)
+            } else {
+                cache_set(&db, &doi_url, Cached::Error).map_err(|_| DullError::Cache)?;
+                Ok(None)
+            }
+        }
     }
 }
 
