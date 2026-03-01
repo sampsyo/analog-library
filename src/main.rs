@@ -23,15 +23,15 @@ struct DOIData {
     #[serde(rename = "type")]
     type_: String,
     #[serde(rename = "abstract")]
-    abstract_: String,
+    abstract_: Option<String>,
     publisher: String,
     #[serde(rename = "URL")]
     url: String,
 
     container_title: String,
     page: String,
-    volume: String,
-    issue: String,
+    volume: Option<String>,
+    issue: Option<String>,
 
     issued: DOIDate,
 }
@@ -46,7 +46,7 @@ struct DOIDate {
 #[serde(rename_all = "kebab-case")]
 struct DOIAuthor {
     #[serde(rename = "ORCID")]
-    orcid: String,
+    orcid: Option<String>,
     given: String,
     family: String,
     sequence: String,
@@ -201,7 +201,7 @@ fn paper_page(paper: DOIData) -> Markup {
         body {
             main {
                 h1 { (paper.title) };
-                p.abstract { (paper.abstract_) };
+                p.abstract { (paper.abstract_.unwrap_or("".to_string())) };
             }
         }
     }
