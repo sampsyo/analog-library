@@ -3,6 +3,9 @@ use axum::{
     extract::{Path, State},
     routing::get,
 };
+use basset::assets;
+
+assets!(TEMPLATES, "templates", ["paper.html"]);
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct DOIData {
@@ -15,7 +18,7 @@ async fn show_doi(State(ctx): State<Context>, Path(doi): Path<String>) -> String
 
     // TODO cache results
     let client = reqwest::Client::new();
-    let res: DOIData = client
+    let doi_data: DOIData = client
         .get(doi_url)
         .header("Accept", "application/json")
         .send()
@@ -24,9 +27,11 @@ async fn show_doi(State(ctx): State<Context>, Path(doi): Path<String>) -> String
         .json()
         .await
         .unwrap(); // TODO
-    dbg!(&res);
+    dbg!(&doi_data);
 
-    format!("hi {}", res.title)
+    // Render the page. TODO handle errors.
+    let tmpl = ctx.tmpls.get_template("paper.html").unwrap();
+    tmpl.render(doi_data).unwrap()
 }
 
 #[derive(Clone)]
@@ -34,11 +39,29 @@ struct Context {
     tmpls: minijinja::Environment<'static>,
 }
 
+fn templates() -> minijinja::Environment<'static> {
+    let mut env = minijinja::Environment::new();
+
+    // Register embedded templates, which are available in release mode.
+    #[cfg(not(debug_assertions))]
+    for (name, source) in TEMPLATES.contents() {
+        env.add_template(name, source)
+            .expect("error in embedded template");
+    }
+
+    // In debug mode only, load templates directly from the filesystem.
+    #[cfg(debug_assertions)]
+    for (name, source) in TEMPLATES.read_all() {
+        env.add_template_owned(name, source.expect("error reading template"))
+            .expect("error in loaded template");
+    }
+
+    env
+}
+
 #[tokio::main]
 async fn main() {
-    let ctx = Context {
-        tmpls: minijinja::Environment::new(),
-    };
+    let ctx = Context { tmpls: templates() };
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
