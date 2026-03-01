@@ -10,20 +10,61 @@ use basset::assets;
 assets!(TEMPLATES, "templates", ["paper.html", "style.css"]);
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
 struct DOIData {
     title: String,
+    author: Vec<DOIAuthor>,
+    #[serde(rename = "type")]
+    type_: String,
+    #[serde(rename = "abstract")]
+    abstract_: String,
+    publisher: String,
+    #[serde(rename = "URL")]
+    url: String,
+
+    container_title: String,
+    page: String,
+    volume: String,
+    issue: String,
+
+    issued: DOIDate,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct DOIDate {
+    date_parts: Vec<(u32, u32, u32)>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct DOIAuthor {
+    #[serde(rename = "ORCID")]
+    orcid: String,
+    given: String,
+    family: String,
+    sequence: String,
+    affiliation: Vec<DOIAffiliation>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct DOIAffiliation {
+    name: String,
 }
 
 enum MyError {
-    DOIFetchFailed,
-    RenderFailed,
+    Fetch,
+    Parse(serde_json::Error),
+    Render,
 }
 
 impl IntoResponse for MyError {
     fn into_response(self) -> Response {
         let body = match self {
-            MyError::DOIFetchFailed => "failed to retrieve data from doi.org",
-            MyError::RenderFailed => "page rendering failed",
+            MyError::Fetch => "failed to retrieve data from doi.org".to_string(),
+            MyError::Parse(e) => format!("could not parse doi.org response: {e}"),
+            MyError::Render => "page rendering failed".to_string(),
         };
 
         // it's often easiest to implement `IntoResponse` by calling other implementations
@@ -37,17 +78,17 @@ async fn fetch_doi(doi: &str) -> Result<DOIData, MyError> {
 
     // TODO cache results
     let client = reqwest::Client::new();
-    let data = client
+    let body = client
         .get(doi_url)
         .header("Accept", "application/json")
         .send()
         .await
-        .map_err(|_| MyError::DOIFetchFailed)?
-        .json()
+        .map_err(|_| MyError::Fetch)?
+        .bytes()
         .await
-        .map_err(|_| MyError::DOIFetchFailed)?;
+        .map_err(|_| MyError::Fetch)?;
 
-    Ok(data)
+    serde_json::from_slice(&body).map_err(|e| MyError::Parse(e))
 }
 
 async fn paper(State(ctx): State<Context>, Path(doi): Path<String>) -> Result<Response, MyError> {
@@ -58,7 +99,7 @@ async fn paper(State(ctx): State<Context>, Path(doi): Path<String>) -> Result<Re
         .tmpls
         .get_template("paper.html")
         .expect("template must exist");
-    let body = tmpl.render(doi_data).map_err(|_| MyError::RenderFailed);
+    let body = tmpl.render(doi_data).map_err(|_| MyError::Render);
 
     Ok(Html(body).into_response())
 }
