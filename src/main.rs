@@ -144,17 +144,20 @@ async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<DOIData>, DullError
 
     // Cache miss.
     let client = reqwest::Client::new();
-    let body = client
+    let res = client
         .get(&doi_url)
         .header("Accept", "application/json")
         .send()
         .await
-        .map_err(|_| DullError::Fetch)?
-        .bytes()
-        .await
         .map_err(|_| DullError::Fetch)?;
-    cache_set(&db, &doi_url, body.as_ref()).map_err(|_| DullError::Cache)?;
-    serde_json::from_slice(&body).map_err(DullError::Parse)
+    if res.status() == StatusCode::OK {
+        let body = res.bytes().await.map_err(|_| DullError::Fetch)?;
+        cache_set(&db, &doi_url, body.as_ref()).map_err(|_| DullError::Cache)?;
+        serde_json::from_slice(&body).map_err(DullError::Parse)
+    } else {
+        // TODO cache the error?
+        Ok(None)
+    }
 }
 
 fn paper_page(paper: DOIData) -> Markup {
