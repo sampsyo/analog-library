@@ -59,16 +59,18 @@ struct DOIAffiliation {
     name: String,
 }
 
-enum MyError {
+enum DullError {
     Fetch,
     Parse(serde_json::Error),
+    Cache,
 }
 
-impl IntoResponse for MyError {
+impl IntoResponse for DullError {
     fn into_response(self) -> Response {
         let body = match self {
-            MyError::Fetch => "failed to retrieve data from doi.org".to_string(),
-            MyError::Parse(e) => format!("could not parse doi.org response: {e}"),
+            DullError::Fetch => "failed to retrieve data from doi.org".to_string(),
+            DullError::Parse(e) => format!("could not parse doi.org response: {e}"),
+            DullError::Cache => "error accessing cache".to_string(),
         };
 
         // it's often easiest to implement `IntoResponse` by calling other implementations
@@ -116,12 +118,12 @@ fn cache_set(db: &sled::Db, url: &str, body: &[u8]) -> TransactionResult<(), Inf
     })
 }
 
-async fn fetch_doi(db: sled::Db, doi: &str) -> Result<DOIData, MyError> {
+async fn fetch_doi(db: sled::Db, doi: &str) -> Result<DOIData, DullError> {
     // TODO validate DOI
     let doi_url = format!("https://doi.org/{doi}");
 
-    match cache_get(&db, &doi_url).expect("cache error") {
-        Some(body) => serde_json::from_slice(&body).map_err(|e| MyError::Parse(e)),
+    match cache_get(&db, &doi_url).map_err(|_| DullError::Cache)? {
+        Some(body) => serde_json::from_slice(&body).map_err(DullError::Parse),
         None => {
             let client = reqwest::Client::new();
             let body = client
@@ -129,12 +131,12 @@ async fn fetch_doi(db: sled::Db, doi: &str) -> Result<DOIData, MyError> {
                 .header("Accept", "application/json")
                 .send()
                 .await
-                .map_err(|_| MyError::Fetch)?
+                .map_err(|_| DullError::Fetch)?
                 .bytes()
                 .await
-                .map_err(|_| MyError::Fetch)?;
-            cache_set(&db, &doi_url, body.as_ref()).expect("cache error");
-            serde_json::from_slice(&body).map_err(|e| MyError::Parse(e))
+                .map_err(|_| DullError::Fetch)?;
+            cache_set(&db, &doi_url, body.as_ref()).map_err(|_| DullError::Cache)?;
+            serde_json::from_slice(&body).map_err(DullError::Parse)
         }
     }
 }
@@ -164,7 +166,7 @@ fn paper_page(paper: DOIData) -> Markup {
     }
 }
 
-async fn paper(State(db): State<sled::Db>, Path(doi): Path<String>) -> Result<Markup, MyError> {
+async fn paper(State(db): State<sled::Db>, Path(doi): Path<String>) -> Result<Markup, DullError> {
     let doi_data = fetch_doi(db, &doi).await?;
     Ok(paper_page(doi_data))
 }
