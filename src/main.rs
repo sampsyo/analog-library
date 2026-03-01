@@ -116,8 +116,25 @@ fn cache_set(db: &sled::Db, url: &str, body: &[u8]) -> TransactionResult<(), Inf
     })
 }
 
-async fn fetch_doi(db: sled::Db, doi: &str) -> Result<DOIData, DullError> {
-    // TODO validate DOI
+/// Validate a DOI.
+///
+/// Matches the regex: [0-9/.]+
+fn valid_doi(doi: &str) -> bool {
+    if doi.is_empty() {
+        return false;
+    }
+    for c in doi.bytes() {
+        if !(c == b'/' || c == b'.' || c.is_ascii_digit()) {
+            return false;
+        }
+    }
+    true
+}
+
+async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<DOIData>, DullError> {
+    if !valid_doi(doi) {
+        return Ok(None);
+    }
     let doi_url = format!("https://doi.org/{doi}");
 
     // Cache hit.
@@ -165,9 +182,11 @@ fn paper_page(paper: DOIData) -> Markup {
     }
 }
 
-async fn paper(State(db): State<sled::Db>, Path(doi): Path<String>) -> Result<Markup, DullError> {
-    let doi_data = fetch_doi(db, &doi).await?;
-    Ok(paper_page(doi_data))
+async fn paper(State(db): State<sled::Db>, Path(doi): Path<String>) -> Result<Markup, Response> {
+    match fetch_doi(db, &doi).await.map_err(|e| e.into_response())? {
+        Some(doi_data) => Ok(paper_page(doi_data)),
+        None => Err(StatusCode::NOT_FOUND.into_response()),
+    }
 }
 
 #[tokio::main]
