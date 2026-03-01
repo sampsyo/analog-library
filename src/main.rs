@@ -14,29 +14,51 @@ struct DOIData {
     title: String,
 }
 
-async fn paper(
-    State(ctx): State<Context>,
-    Path(doi): Path<String>,
-) -> Result<Response, (StatusCode, String)> {
+enum MyError {
+    DOIFetchFailed,
+    RenderFailed,
+}
+
+impl IntoResponse for MyError {
+    fn into_response(self) -> Response {
+        let body = match self {
+            MyError::DOIFetchFailed => "failed to retrieve data from doi.org",
+            MyError::RenderFailed => "page rendering failed",
+        };
+
+        // it's often easiest to implement `IntoResponse` by calling other implementations
+        (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+    }
+}
+
+async fn fetch_doi(doi: &str) -> Result<DOIData, MyError> {
     // TODO validate DOI
     let doi_url = format!("https://doi.org/{doi}");
 
     // TODO cache results
     let client = reqwest::Client::new();
-    let doi_data: DOIData = client
+    let data = client
         .get(doi_url)
         .header("Accept", "application/json")
         .send()
         .await
-        .unwrap() // TODO
+        .map_err(|_| MyError::DOIFetchFailed)?
         .json()
         .await
-        .unwrap(); // TODO
-    dbg!(&doi_data);
+        .map_err(|_| MyError::DOIFetchFailed)?;
 
-    // Render the page. TODO handle errors.
-    let tmpl = ctx.tmpls.get_template("paper.html").unwrap();
-    let body = tmpl.render(doi_data).unwrap();
+    Ok(data)
+}
+
+async fn paper(State(ctx): State<Context>, Path(doi): Path<String>) -> Result<Response, MyError> {
+    let doi_data = fetch_doi(&doi).await?;
+
+    // Render the page.
+    let tmpl = ctx
+        .tmpls
+        .get_template("paper.html")
+        .expect("template must exist");
+    let body = tmpl.render(doi_data).map_err(|_| MyError::RenderFailed);
 
     Ok(Html(body).into_response())
 }
