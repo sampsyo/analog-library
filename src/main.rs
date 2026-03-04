@@ -17,7 +17,7 @@ assets!(ASSETS, "assets", ["style.css"]);
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct DOIData {
+struct DOIPaper {
     title: String,
     subtitle: Vec<String>,
     short_title: Vec<String>,
@@ -61,7 +61,7 @@ struct DOIAffiliation {
     name: String,
 }
 
-impl DOIData {
+impl DOIPaper {
     fn title(&self) -> String {
         let mut out = self.title.clone();
         for sub in self.subtitle.iter() {
@@ -164,7 +164,7 @@ fn valid_doi(doi: &str) -> bool {
     true
 }
 
-async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<DOIData>, DullError> {
+async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<DOIPaper>, DullError> {
     if !valid_doi(doi) {
         return Ok(None);
     }
@@ -195,7 +195,7 @@ async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<DOIData>, DullError
     }
 }
 
-fn paper_page(paper: DOIData) -> Markup {
+fn paper_page(paper: DOIPaper) -> Markup {
     #[cfg(not(debug_assertions))]
     let css = ASSETS.get("style.css").expect("asset must exist");
 
