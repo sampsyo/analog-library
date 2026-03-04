@@ -168,7 +168,7 @@ async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<DOIPaper>, DullErro
     if !valid_doi(doi) {
         return Ok(None);
     }
-    let doi_url = format!("https://doi.org/{doi}");
+    let doi_url = format!("https://api.crossref.org/v1/works/{doi}/transform");
 
     match cache_get(&db, &doi_url).map_err(|_| DullError::Cache)? {
         Cached::Valid(body) => serde_json::from_slice(&body).map_err(DullError::Parse),
