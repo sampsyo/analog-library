@@ -19,6 +19,8 @@ assets!(ASSETS, "assets", ["style.css"]);
 #[serde(rename_all = "kebab-case")]
 struct DOIData {
     title: String,
+    subtitle: Vec<String>,
+    short_title: Vec<String>,
     author: Vec<DOIAuthor>,
     #[serde(rename = "type")]
     type_: String,
@@ -57,6 +59,17 @@ struct DOIAuthor {
 #[serde(rename_all = "kebab-case")]
 struct DOIAffiliation {
     name: String,
+}
+
+impl DOIData {
+    fn title(&self) -> String {
+        let mut out = self.title.clone();
+        for sub in self.subtitle.iter() {
+            out.push_str(": ");
+            out.push_str(sub);
+        }
+        out
+    }
 }
 
 enum DullError {
@@ -136,7 +149,7 @@ fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> TransactionResult
     })
 }
 
-/// Validate a DOI.
+/// Check whether a DOI is valid.
 ///
 /// Matches the regex: [0-9/.]+
 fn valid_doi(doi: &str) -> bool {
@@ -189,18 +202,20 @@ fn paper_page(paper: DOIData) -> Markup {
     #[cfg(debug_assertions)]
     let css = ASSETS.read("style.css").expect("asset must exist").unwrap();
 
+    let title = paper.title();
+
     html! {
         (DOCTYPE)
         html {
             head {
                 meta charset="utf-8";
-                title { (paper.title) };
+                title { (title) };
                 style { (PreEscaped(css)) };
             }
         }
         body {
             main {
-                h1 { (paper.title) };
+                h1 { (title) };
                 p.abstract { (paper.abstract_.unwrap_or("".to_string())) };
             }
         }
