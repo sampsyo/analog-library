@@ -216,7 +216,11 @@ fn paper_page(paper: DOIPaper) -> Markup {
         body {
             main {
                 h1 { (title) };
-                p.abstract { (paper.abstract_.unwrap_or("".to_string())) };
+                @if let Some(abs) = paper.abstract_ {
+                    p.abstract { (abs) };
+                } @else {
+                    p.abstract.missing { "Abstract missing." };
+                }
             }
         }
     }

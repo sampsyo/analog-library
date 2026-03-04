@@ -7,6 +7,7 @@ body {
   gap: 0;
 
   --theme-color: rgb(179, 27, 27);
+  --mid-color: rgba(175, 184, 193, 0.2);
   --mono-font:
     ui-monospace, SF Mono, "Anonymous Pro", Inconsolata, Consolas,
     "Source Code Pro", Menlo, Monaco, monospace;
@@ -41,7 +42,7 @@ main {
     font-size: var(--mono-size);
   }
   code {
-    background: rgba(175, 184, 193, 0.2);
+    background: var(--mid-color);
   }
   pre code {
     display: block;
@@ -59,13 +60,19 @@ main {
   }
 }
 
+.abstract {
+  &.missing {
+    padding: 1em;
+    background: var(--mid-color);
+    font-style: italic;
+  }
+}
+
 /* Dark mode. */
 @media (prefers-color-scheme: dark) {
   body {
     background: black;
     color: white;
     --theme-color: rgb(218, 60, 63);
-    --faded-color: #aaa;
-    --more-faded-color: #eee;
   }
 }
