@@ -72,6 +72,13 @@ impl DOIPaper {
     }
 }
 
+impl DOIAuthor {
+    fn name(&self) -> String {
+        // TODO Use the `sequence` field.
+        format!("{} {}", self.given, self.family)
+    }
+}
+
 enum DullError {
     Fetch,
     Parse(serde_json::Error),
@@ -216,6 +223,11 @@ fn paper_page(paper: DOIPaper) -> Markup {
         body {
             main {
                 h1 { (title) };
+                ul.authors {
+                    @for author in paper.author {
+                        li { (author.name()) }
+                    }
+                };
                 @if let Some(abs) = paper.abstract_ {
                     p.abstract { (abs) };
                 } @else {
