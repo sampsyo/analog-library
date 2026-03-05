@@ -13,27 +13,29 @@ use maud::{DOCTYPE, Markup, PreEscaped, html};
 
 assets!(ASSETS, "assets", ["style.css"]);
 
-enum DullError {
-    Fetch,
+enum Error {
+    Fetch(webcache::Error),
     Parse(serde_json::Error),
-    Cache,
 }
 
-impl From<webcache::Error> for DullError {
-    fn from(value: webcache::Error) -> Self {
-        match value {
-            webcache::Error::Cache(_) => DullError::Cache,
-            webcache::Error::Web(_) => DullError::Fetch,
-        }
+impl From<webcache::Error> for Error {
+    fn from(err: webcache::Error) -> Self {
+        Error::Fetch(err)
     }
 }
 
-impl IntoResponse for DullError {
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Self {
+        Error::Parse(err)
+    }
+}
+
+impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let body = match self {
-            DullError::Fetch => "failed to retrieve data from API".to_string(),
-            DullError::Parse(e) => format!("could not parse API response: {e}"),
-            DullError::Cache => "error accessing cache".to_string(),
+            Error::Fetch(webcache::Error::Web) => "failed to retrieve data from API".to_string(),
+            Error::Fetch(webcache::Error::Cache) => "error accessing cache".to_string(),
+            Error::Parse(e) => format!("could not parse API response: {e}"),
         };
 
         (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
@@ -55,13 +57,13 @@ fn valid_doi(doi: &str) -> bool {
     true
 }
 
-async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<crossref::Paper>, DullError> {
+async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<crossref::Paper>, Error> {
     if !valid_doi(doi) {
         return Ok(None);
     }
     let doi_url = format!("https://api.crossref.org/v1/works/{doi}/transform");
     if let Some(body) = webcache::fetch(&db, &doi_url).await? {
-        let paper = serde_json::from_slice(body.as_ref()).map_err(DullError::Parse)?;
+        let paper = serde_json::from_slice(body.as_ref())?;
         Ok(Some(paper))
     } else {
         Ok(None)

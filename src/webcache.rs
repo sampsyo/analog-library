@@ -17,19 +17,19 @@ enum Cached<T> {
 }
 
 pub enum Error {
-    Cache(sled::transaction::TransactionError<Infallible>),
-    Web(reqwest::Error),
+    Cache,
+    Web,
 }
 
 impl From<sled::transaction::TransactionError<Infallible>> for Error {
-    fn from(value: sled::transaction::TransactionError<Infallible>) -> Self {
-        Error::Cache(value)
+    fn from(_: sled::transaction::TransactionError<Infallible>) -> Self {
+        Error::Cache
     }
 }
 
 impl From<reqwest::Error> for Error {
-    fn from(value: reqwest::Error) -> Self {
-        Error::Web(value)
+    fn from(_: reqwest::Error) -> Self {
+        Error::Web
     }
 }
 
