@@ -1,4 +1,5 @@
 mod crossref;
+mod webcache;
 
 use axum::{
     Router,
@@ -9,11 +10,6 @@ use axum::{
 };
 use basset::assets;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
-use sled::transaction::TransactionResult;
-use std::convert::Infallible;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
-const CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24);
 
 assets!(ASSETS, "assets", ["style.css"]);
 
@@ -23,75 +19,25 @@ enum DullError {
     Cache,
 }
 
+impl From<webcache::Error> for DullError {
+    fn from(value: webcache::Error) -> Self {
+        match value {
+            webcache::Error::Cache(_) => DullError::Cache,
+            webcache::Error::Web(_) => DullError::Fetch,
+        }
+    }
+}
+
 impl IntoResponse for DullError {
     fn into_response(self) -> Response {
         let body = match self {
-            DullError::Fetch => "failed to retrieve data from doi.org".to_string(),
-            DullError::Parse(e) => format!("could not parse doi.org response: {e}"),
+            DullError::Fetch => "failed to retrieve data from API".to_string(),
+            DullError::Parse(e) => format!("could not parse API response: {e}"),
             DullError::Cache => "error accessing cache".to_string(),
         };
 
         (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
     }
-}
-
-enum Cached<T> {
-    /// We're caching actual contents.
-    Valid(T),
-
-    /// The cache entry is missing or expired.
-    Invalid,
-
-    /// The cache entry is present and fresh, but represents an error.
-    Error,
-}
-
-/// Get the current cached URL contents.
-fn cache_get(db: &sled::Db, url: &str) -> TransactionResult<Cached<sled::IVec>, Infallible> {
-    let ts_key = format!("ts:{url}");
-
-    db.transaction(|tx| {
-        if let Some(ts_data) = tx.get(ts_key.as_bytes())? {
-            let ts = u64::from_le_bytes(ts_data.as_ref().try_into().unwrap());
-            let time = UNIX_EPOCH + Duration::from_secs(ts);
-
-            // Is the cache entry expired?
-            let age = SystemTime::now().duration_since(time).unwrap();
-            if age > CACHE_EXPIRE {
-                tx.remove(ts_key.as_bytes())?;
-                tx.remove(url)?;
-                Ok(Cached::Invalid)
-            } else {
-                match tx.get(url)? {
-                    Some(body) => Ok(Cached::Valid(body)),
-                    None => Ok(Cached::Error),
-                }
-            }
-        } else {
-            // Cold miss.
-            Ok(Cached::Invalid)
-        }
-    })
-}
-
-/// Set the current cached contents of the URL.
-fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> TransactionResult<(), Infallible> {
-    let ts_key = format!("ts:{url}");
-    let ts_data = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        .to_le_bytes();
-
-    db.transaction(|tx| {
-        tx.insert(ts_key.as_bytes(), &ts_data)?;
-        match body {
-            Cached::Valid(data) => tx.insert(url, data)?,
-            Cached::Error => tx.remove(url)?, // Missing contents indicates error.
-            Cached::Invalid => unimplemented!(),
-        };
-        Ok(())
-    })
 }
 
 /// Check whether a DOI is valid.
@@ -114,29 +60,11 @@ async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<crossref::Paper>, D
         return Ok(None);
     }
     let doi_url = format!("https://api.crossref.org/v1/works/{doi}/transform");
-
-    match cache_get(&db, &doi_url).map_err(|_| DullError::Cache)? {
-        Cached::Valid(body) => serde_json::from_slice(&body).map_err(DullError::Parse),
-        Cached::Error => Ok(None),
-        Cached::Invalid => {
-            // Cache miss.
-            let client = reqwest::Client::new();
-            let res = client
-                .get(&doi_url)
-                .header("Accept", "application/json")
-                .send()
-                .await
-                .map_err(|_| DullError::Fetch)?;
-            if res.status() == StatusCode::OK {
-                let body = res.bytes().await.map_err(|_| DullError::Fetch)?;
-                cache_set(&db, &doi_url, Cached::Valid(body.as_ref()))
-                    .map_err(|_| DullError::Cache)?;
-                serde_json::from_slice(&body).map_err(DullError::Parse)
-            } else {
-                cache_set(&db, &doi_url, Cached::Error).map_err(|_| DullError::Cache)?;
-                Ok(None)
-            }
-        }
+    if let Some(body) = webcache::fetch(&db, &doi_url).await? {
+        let paper = serde_json::from_slice(body.as_ref()).map_err(DullError::Parse)?;
+        Ok(Some(paper))
+    } else {
+        Ok(None)
     }
 }
 
