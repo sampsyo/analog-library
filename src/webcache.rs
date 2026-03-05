@@ -16,21 +16,12 @@ enum Cached<T> {
     Error,
 }
 
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    Cache,
-    Web,
-}
-
-impl From<sled::transaction::TransactionError<Infallible>> for Error {
-    fn from(_: sled::transaction::TransactionError<Infallible>) -> Self {
-        Error::Cache
-    }
-}
-
-impl From<reqwest::Error> for Error {
-    fn from(_: reqwest::Error) -> Self {
-        Error::Web
-    }
+    #[error("error accessing cache")]
+    Cache(#[from] sled::transaction::TransactionError<Infallible>),
+    #[error("failed to load URL")]
+    Web(#[from] reqwest::Error),
 }
 
 /// Get the current cached URL contents.

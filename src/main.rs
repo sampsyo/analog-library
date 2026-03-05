@@ -13,28 +13,19 @@ use maud::{DOCTYPE, Markup, PreEscaped, html};
 
 assets!(ASSETS, "assets", ["style.css"]);
 
+#[derive(Debug, thiserror::Error)]
 enum Error {
-    Fetch(webcache::Error),
-    Parse(serde_json::Error),
-}
-
-impl From<webcache::Error> for Error {
-    fn from(err: webcache::Error) -> Self {
-        Error::Fetch(err)
-    }
-}
-
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Self {
-        Error::Parse(err)
-    }
+    #[error("failed loading paper data")]
+    Fetch(#[from] webcache::Error),
+    #[error("could not parse API response")]
+    Parse(#[from] serde_json::Error),
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let body = match self {
-            Error::Fetch(webcache::Error::Web) => "failed to retrieve data from API".to_string(),
-            Error::Fetch(webcache::Error::Cache) => "error accessing cache".to_string(),
+            Error::Fetch(webcache::Error::Web(_)) => "failed to retrieve data from API".to_string(),
+            Error::Fetch(webcache::Error::Cache(_)) => "error accessing cache".to_string(),
             Error::Parse(e) => format!("could not parse API response: {e}"),
         };
 
