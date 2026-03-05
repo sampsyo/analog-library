@@ -23,12 +23,7 @@ enum Error {
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        let body = match self {
-            Error::Fetch(webcache::Error::Web(_)) => "failed to retrieve data from API".to_string(),
-            Error::Fetch(webcache::Error::Cache(_)) => "error accessing cache".to_string(),
-            Error::Parse(e) => format!("could not parse API response: {e}"),
-        };
-
+        let body = self.to_string();
         (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
     }
 }
