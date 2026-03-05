@@ -1,5 +1,4 @@
 use reqwest::StatusCode;
-use sled::transaction::TransactionResult;
 use std::convert::Infallible;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -19,16 +18,27 @@ enum Cached<T> {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("error accessing cache")]
-    Cache(#[from] sled::transaction::TransactionError<Infallible>),
+    Cache(#[from] sled::Error),
     #[error("failed to load URL")]
     Web(#[from] reqwest::Error),
 }
 
+/// Unwrap the sled `Result` for a transaction that cannot abort.
+///
+/// The only way these transactions can fail is with an underlying storage
+/// error, not with an error raised by our own code.
+fn unwrap_res<T>(res: sled::transaction::TransactionResult<T, Infallible>) -> sled::Result<T> {
+    res.map_err(|err| match err {
+        sled::transaction::TransactionError::Storage(e) => e,
+        sled::transaction::TransactionError::Abort(_) => panic!("transaction cannot abort"),
+    })
+}
+
 /// Get the current cached URL contents.
-fn cache_get(db: &sled::Db, url: &str) -> TransactionResult<Cached<sled::IVec>, Infallible> {
+fn cache_get(db: &sled::Db, url: &str) -> sled::Result<Cached<sled::IVec>> {
     let ts_key = format!("ts:{url}");
 
-    db.transaction(|tx| {
+    unwrap_res(db.transaction(|tx| {
         if let Some(ts_data) = tx.get(ts_key.as_bytes())? {
             let ts = u64::from_le_bytes(ts_data.as_ref().try_into().unwrap());
             let time = UNIX_EPOCH + Duration::from_secs(ts);
@@ -49,11 +59,11 @@ fn cache_get(db: &sled::Db, url: &str) -> TransactionResult<Cached<sled::IVec>, 
             // Cold miss.
             Ok(Cached::Invalid)
         }
-    })
+    }))
 }
 
 /// Set the current cached contents of the URL.
-fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> TransactionResult<(), Infallible> {
+fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> sled::Result<()> {
     let ts_key = format!("ts:{url}");
     let ts_data = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -61,7 +71,7 @@ fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> TransactionResult
         .as_secs()
         .to_le_bytes();
 
-    db.transaction(|tx| {
+    unwrap_res(db.transaction(|tx| {
         tx.insert(ts_key.as_bytes(), &ts_data)?;
         match body {
             Cached::Valid(data) => tx.insert(url, data)?,
@@ -69,7 +79,7 @@ fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> TransactionResult
             Cached::Invalid => unimplemented!(),
         };
         Ok(())
-    })
+    }))
 }
 
 pub async fn fetch(db: &sled::Db, url: &str) -> Result<Option<sled::IVec>, Error> {
