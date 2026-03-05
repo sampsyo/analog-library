@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Paper {
@@ -12,13 +14,13 @@ pub struct Paper {
     pub publisher: String,
     #[serde(rename = "URL")]
     pub url: String,
+    pub issued: Date,
+    pub relation: HashMap<String, Vec<Relation>>,
 
     pub container_title: String,
     pub page: String,
     pub volume: Option<String>,
     pub issue: Option<String>,
-
-    pub issued: Date,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -44,6 +46,14 @@ pub struct Affiliation {
     pub name: String,
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Relation {
+    pub id_type: String,
+    pub id: String,
+    pub asserted_by: String,
+}
+
 impl Paper {
     pub fn title(&self) -> String {
         let mut out = self.title.clone();
@@ -52,6 +62,14 @@ impl Paper {
             out.push_str(sub);
         }
         out
+    }
+
+    pub fn identical_dois(&self) -> Vec<String> {
+        if let Some(rels) = self.relation.get("is-identical-to") {
+            rels.iter().map(|r| r.id.clone()).collect()
+        } else {
+            vec![]
+        }
     }
 }
 
