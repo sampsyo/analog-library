@@ -1,3 +1,5 @@
+mod crossref;
+
 use axum::{
     Router,
     extract::{Path, State},
@@ -14,70 +16,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 const CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24);
 
 assets!(ASSETS, "assets", ["style.css"]);
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct DOIPaper {
-    title: String,
-    subtitle: Vec<String>,
-    short_title: Vec<String>,
-    author: Vec<DOIAuthor>,
-    #[serde(rename = "type")]
-    type_: String,
-    #[serde(rename = "abstract")]
-    abstract_: Option<String>,
-    publisher: String,
-    #[serde(rename = "URL")]
-    url: String,
-
-    container_title: String,
-    page: String,
-    volume: Option<String>,
-    issue: Option<String>,
-
-    issued: DOIDate,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct DOIDate {
-    date_parts: Vec<(u32, u32, u32)>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct DOIAuthor {
-    #[serde(rename = "ORCID")]
-    orcid: Option<String>,
-    given: String,
-    family: String,
-    sequence: String,
-    affiliation: Vec<DOIAffiliation>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct DOIAffiliation {
-    name: String,
-}
-
-impl DOIPaper {
-    fn title(&self) -> String {
-        let mut out = self.title.clone();
-        for sub in self.subtitle.iter() {
-            out.push_str(": ");
-            out.push_str(sub);
-        }
-        out
-    }
-}
-
-impl DOIAuthor {
-    fn name(&self) -> String {
-        // TODO Use the `sequence` field.
-        format!("{} {}", self.given, self.family)
-    }
-}
 
 enum DullError {
     Fetch,
@@ -171,7 +109,7 @@ fn valid_doi(doi: &str) -> bool {
     true
 }
 
-async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<DOIPaper>, DullError> {
+async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<crossref::Paper>, DullError> {
     if !valid_doi(doi) {
         return Ok(None);
     }
@@ -202,7 +140,7 @@ async fn fetch_doi(db: sled::Db, doi: &str) -> Result<Option<DOIPaper>, DullErro
     }
 }
 
-fn paper_page(paper: DOIPaper) -> Markup {
+fn paper_page(paper: crossref::Paper) -> Markup {
     #[cfg(not(debug_assertions))]
     let css = ASSETS.get("style.css").expect("asset must exist");
 
