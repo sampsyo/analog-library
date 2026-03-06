@@ -71,6 +71,14 @@ fn paper_page(paper: crossref::Paper, abstract_: Option<String>) -> Markup {
 
     let title = paper.title();
 
+    // Try converting the abstract from JATS XML to HTML we can render. If this
+    // fails, just pass through the XML as text.
+    // TODO we should probably log the error.
+    let abs = abstract_.map(|j| match jats::to_html(&j) {
+        Ok(h) => html! { (PreEscaped(h)) },
+        Err(_) => html! { (j) },
+    });
+
     html! {
         (DOCTYPE)
         html {
@@ -88,10 +96,10 @@ fn paper_page(paper: crossref::Paper, abstract_: Option<String>) -> Markup {
                         li { (author.name()) }
                     }
                 };
-                @if let Some(abs) = abstract_ {
-                    p.abstract { (PreEscaped(jats::to_html(&abs))) };
+                @if let Some(abs) = abs {
+                    div.abstract { (abs) };
                 } @else {
-                    p.abstract.missing { "Abstract missing." };
+                    div.abstract.missing { "Abstract missing." };
                 }
             }
         }

@@ -3,13 +3,20 @@ use quick_xml::reader::Reader;
 use quick_xml::writer::Writer;
 use std::io::Cursor;
 
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("XML parse error")]
+    Xml(#[from] quick_xml::Error),
+}
+
 /// Translate JATS XML to HTML.
-pub fn to_html(jats: &str) -> String {
+pub fn to_html(jats: &str) -> Result<String, Error> {
     let mut reader = Reader::from_str(jats);
     let mut writer = Writer::new(Cursor::new(Vec::new()));
+
     loop {
-        match reader.read_event() {
-            Ok(Event::Start(e)) => {
+        match reader.read_event()? {
+            Event::Start(e) => {
                 if let Some(html_tag) = trans_tag(e.name().as_ref()) {
                     assert!(
                         writer
@@ -20,7 +27,7 @@ pub fn to_html(jats: &str) -> String {
                     panic!("unknown tag start")
                 }
             }
-            Ok(Event::End(e)) => {
+            Event::End(e) => {
                 if let Some(html_tag) = trans_tag(e.name().as_ref()) {
                     assert!(
                         writer
@@ -31,13 +38,13 @@ pub fn to_html(jats: &str) -> String {
                     panic!("unknown tag end")
                 }
             }
-            Ok(Event::Eof) => break,
-            Ok(e) => assert!(writer.write_event(e.borrow()).is_ok()),
-            // TODO fail gracefully
-            Err(e) => panic!("XML error at position {}: {:?}", reader.error_position(), e),
+            Event::Eof => break,
+            e => assert!(writer.write_event(e.borrow()).is_ok()),
         }
     }
-    String::from_utf8(writer.into_inner().into_inner()).expect("output HTML must be UTF-8")
+
+    let bytes = writer.into_inner().into_inner();
+    Ok(String::from_utf8(bytes).expect("output HTML must be UTF-8"))
 }
 
 /// Translate a JATS tag to an HTML tag.
@@ -71,20 +78,20 @@ mod tests {
     fn test_p() {
         let jats = "<jats:p>hi</jats:p>";
         let html = "<p>hi</p>";
-        assert_eq!(to_html(jats), html);
+        assert_eq!(to_html(jats).unwrap(), html);
     }
 
     #[test]
     fn test_italic() {
         let jats = "<jats:italic>hi</jats:italic>";
         let html = "<i>hi</i>";
-        assert_eq!(to_html(jats), html);
+        assert_eq!(to_html(jats).unwrap(), html);
     }
 
     #[test]
     fn test_bold() {
         let jats = "<jats:bold>hi</jats:bold>";
         let html = "<b>hi</b>";
-        assert_eq!(to_html(jats), html);
+        assert_eq!(to_html(jats).unwrap(), html);
     }
 }
