@@ -102,6 +102,16 @@ fn paper_page(paper: crossref::Paper, abstract_: Option<String>) -> Markup {
         body {
             main {
                 h1 { (title) };
+                ul.authors {
+                    @for author in &paper.author {
+                        li { (author.name()) }
+                    }
+                };
+                div.published {
+                    @if let Some(event) = &paper.event {
+                        (event)
+                    }
+                }
                 div.links {
                     @if let Some(url) = paper.resource_url() {
                         a href=(url) { "paper" }
@@ -110,11 +120,6 @@ fn paper_page(paper: crossref::Paper, abstract_: Option<String>) -> Markup {
                         a href=(url) { "PDF" }
                     }
                 }
-                ul.authors {
-                    @for author in paper.author {
-                        li { (author.name()) }
-                    }
-                };
                 (abs)
             }
         }

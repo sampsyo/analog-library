@@ -24,6 +24,7 @@ pub struct Paper {
     pub page: String,
     pub volume: Option<String>,
     pub issue: Option<String>,
+    pub event: Option<String>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
