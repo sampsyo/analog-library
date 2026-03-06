@@ -48,6 +48,16 @@ fn trans_tag(tag: &[u8]) -> Option<&'static str> {
         Some("i")
     } else if tag == b"jats:bold" {
         Some("b")
+    } else if tag == b"jats:sub" {
+        Some("sub")
+    } else if tag == b"jats:sup" {
+        Some("sup")
+    } else if tag == b"jats:underline" {
+        Some("u")
+    } else if tag == b"jats:strike" {
+        Some("s")
+    } else if tag == b"jats:monospace" {
+        Some("code")
     } else {
         None
     }
