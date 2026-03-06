@@ -19,12 +19,18 @@ enum Error {
     Fetch(#[from] webcache::Error),
     #[error("could not parse API response")]
     Parse(#[from] serde_json::Error),
+    #[error("no paper entry found for this DOI")]
+    NotFound,
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        let body = self.to_string();
-        (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+        let msg = self.to_string();
+        let code = match self {
+            Error::NotFound => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (code, msg).into_response()
     }
 }
 
@@ -43,16 +49,15 @@ fn valid_doi(doi: &str) -> bool {
     true
 }
 
-async fn fetch_doi(db: &sled::Db, doi: &str) -> Result<Option<crossref::Paper>, Error> {
+async fn fetch_doi(db: &sled::Db, doi: &str) -> Result<crossref::Paper, Error> {
     if !valid_doi(doi) {
-        return Ok(None);
+        return Err(Error::NotFound);
     }
     let doi_url = format!("https://api.crossref.org/v1/works/{doi}/transform");
     if let Some(body) = webcache::fetch(db, &doi_url).await? {
-        let paper = serde_json::from_slice(body.as_ref())?;
-        Ok(Some(paper))
+        Ok(serde_json::from_slice(body.as_ref())?)
     } else {
-        Ok(None)
+        Err(Error::NotFound)
     }
 }
 
@@ -105,9 +110,8 @@ async fn get_abstract(db: &sled::Db, paper: &crossref::Paper) -> Result<Option<S
         None => {
             let mut out = None;
             for other_doi in paper.identical_dois() {
-                if let Some(other_paper) = fetch_doi(db, &other_doi).await?
-                    && let Some(abstract_) = other_paper.abstract_
-                {
+                let other_paper = fetch_doi(db, &other_doi).await?;
+                if let Some(abstract_) = other_paper.abstract_ {
                     out = Some(abstract_.to_string());
                     break;
                 }
@@ -117,18 +121,10 @@ async fn get_abstract(db: &sled::Db, paper: &crossref::Paper) -> Result<Option<S
     }
 }
 
-async fn show_paper(
-    State(db): State<sled::Db>,
-    Path(doi): Path<String>,
-) -> Result<Markup, Response> {
-    if let Some(paper) = fetch_doi(&db, &doi).await.map_err(|e| e.into_response())? {
-        let abstract_ = get_abstract(&db, &paper)
-            .await
-            .map_err(|e| e.into_response())?;
-        Ok(paper_page(paper, abstract_))
-    } else {
-        Err(StatusCode::NOT_FOUND.into_response())
-    }
+async fn show_paper(State(db): State<sled::Db>, Path(doi): Path<String>) -> Result<Markup, Error> {
+    let paper = fetch_doi(&db, &doi).await?;
+    let abstract_ = get_abstract(&db, &paper).await?;
+    Ok(paper_page(paper, abstract_))
 }
 
 #[tokio::main]
