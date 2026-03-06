@@ -16,6 +16,7 @@ pub struct Paper {
     pub url: String,
     pub issued: Date,
     pub relation: HashMap<String, Vec<Relation>>,
+    pub resource: HashMap<String, Resource>,
 
     pub container_title: String,
     pub page: String,
@@ -54,6 +55,13 @@ pub struct Relation {
     pub asserted_by: String,
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Resource {
+    #[serde(rename = "URL")]
+    pub url: String,
+}
+
 impl Paper {
     pub fn title(&self) -> String {
         let mut out = self.title.clone();
@@ -70,6 +78,10 @@ impl Paper {
         } else {
             vec![]
         }
+    }
+
+    pub fn resource_url(&self) -> Option<&str> {
+        self.resource.get("primary").map(|r| r.url.as_ref())
     }
 }
 

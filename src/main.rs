@@ -96,6 +96,11 @@ fn paper_page(paper: crossref::Paper, abstract_: Option<String>) -> Markup {
         body {
             main {
                 h1 { (title) };
+                div.links {
+                    @if let Some(url) = paper.resource_url() {
+                        a href=(url) { "paper" }
+                    }
+                }
                 ul.authors {
                     @for author in paper.author {
                         li { (author.name()) }
