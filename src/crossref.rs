@@ -17,6 +17,8 @@ pub struct Paper {
     pub issued: Date,
     pub relation: HashMap<String, Vec<Relation>>,
     pub resource: HashMap<String, Resource>,
+    #[serde(rename = "DOI")]
+    pub doi: String,
 
     pub container_title: String,
     pub page: String,
@@ -82,6 +84,25 @@ impl Paper {
 
     pub fn resource_url(&self) -> Option<&str> {
         self.resource.get("primary").map(|r| r.url.as_ref())
+    }
+
+    pub fn is_acm(&self) -> bool {
+        if let Some(url) = self.resource_url()
+            && let Ok(url) = url::Url::parse(url)
+            && let Some(url::Host::Domain("dl.acm.org")) = url.host()
+        {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn pdf_url(&self) -> Option<String> {
+        if self.is_acm() {
+            Some(format!("https://dl.acm.org/doi/pdf/{}", self.doi))
+        } else {
+            None
+        }
     }
 }
 

@@ -100,6 +100,9 @@ fn paper_page(paper: crossref::Paper, abstract_: Option<String>) -> Markup {
                     @if let Some(url) = paper.resource_url() {
                         a href=(url) { "paper" }
                     }
+                    @if let Some(url) = paper.pdf_url() {
+                        a href=(url) { "PDF" }
+                    }
                 }
                 ul.authors {
                     @for author in paper.author {

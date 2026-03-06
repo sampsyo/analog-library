@@ -14,3 +14,4 @@ maud = { version = "*", features = ["axum"] }
 sled = "0.34"
 thiserror = "2"
 quick-xml = "0.39"
+url = "2"
