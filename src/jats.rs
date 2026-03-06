@@ -7,6 +7,8 @@ use std::io::Cursor;
 pub enum Error {
     #[error("XML parse error")]
     Xml(#[from] quick_xml::Error),
+    #[error("unknown tag")]
+    UnknownTag,
 }
 
 /// Translate JATS XML to HTML.
@@ -18,28 +20,24 @@ pub fn to_html(jats: &str) -> Result<String, Error> {
         match reader.read_event()? {
             Event::Start(e) => {
                 if let Some(html_tag) = trans_tag(e.name().as_ref()) {
-                    assert!(
-                        writer
-                            .write_event(Event::Start(BytesStart::new(html_tag)))
-                            .is_ok()
-                    );
+                    writer
+                        .write_event(Event::Start(BytesStart::new(html_tag)))
+                        .unwrap();
                 } else {
-                    panic!("unknown tag start")
+                    return Err(Error::UnknownTag);
                 }
             }
             Event::End(e) => {
                 if let Some(html_tag) = trans_tag(e.name().as_ref()) {
-                    assert!(
-                        writer
-                            .write_event(Event::End(BytesEnd::new(html_tag)))
-                            .is_ok()
-                    );
+                    writer
+                        .write_event(Event::End(BytesEnd::new(html_tag)))
+                        .unwrap()
                 } else {
-                    panic!("unknown tag end")
+                    return Err(Error::UnknownTag);
                 }
             }
             Event::Eof => break,
-            e => assert!(writer.write_event(e.borrow()).is_ok()),
+            e => writer.write_event(e.borrow()).unwrap(),
         }
     }
 
