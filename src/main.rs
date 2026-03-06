@@ -1,4 +1,5 @@
 mod crossref;
+mod jats;
 mod webcache;
 
 use axum::{
@@ -88,7 +89,7 @@ fn paper_page(paper: crossref::Paper, abstract_: Option<String>) -> Markup {
                     }
                 };
                 @if let Some(abs) = abstract_ {
-                    p.abstract { (abs) };
+                    p.abstract { (PreEscaped(jats::to_html(&abs))) };
                 } @else {
                     p.abstract.missing { "Abstract missing." };
                 }
@@ -110,6 +111,7 @@ async fn get_abstract(db: &sled::Db, paper: &crossref::Paper) -> Result<Option<S
         None => {
             let mut out = None;
             for other_doi in paper.identical_dois() {
+                // TODO Maybe try to suppress "not found" errors when fetching other_paper?
                 let other_paper = fetch_doi(db, &other_doi).await?;
                 if let Some(abstract_) = other_paper.abstract_ {
                     out = Some(abstract_.to_string());
