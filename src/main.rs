@@ -5,7 +5,10 @@ mod webcache;
 use axum::{
     Router,
     extract::{Path, State},
-    http::StatusCode,
+    http::{
+        StatusCode,
+        header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderValue},
+    },
     response::{IntoResponse, Response},
     routing::get,
 };
@@ -26,6 +29,7 @@ enum Error {
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
+        dbg!(&self);
         let msg = self.to_string();
         let code = match self {
             Error::NotFound => StatusCode::NOT_FOUND,
@@ -50,16 +54,18 @@ fn valid_doi(doi: &str) -> bool {
     true
 }
 
-async fn fetch_doi(db: &sled::Db, doi: &str) -> Result<crossref::Paper, Error> {
+async fn fetch_doi_json(db: &sled::Db, doi: &str) -> Result<sled::IVec, Error> {
     if !valid_doi(doi) {
         return Err(Error::NotFound);
     }
     let doi_url = format!("https://api.crossref.org/v1/works/{doi}/transform");
-    if let Some(body) = webcache::fetch(db, &doi_url).await? {
-        Ok(serde_json::from_slice(body.as_ref())?)
-    } else {
-        Err(Error::NotFound)
-    }
+    webcache::fetch(db, &doi_url).await?.ok_or(Error::NotFound)
+}
+
+async fn fetch_doi(db: &sled::Db, doi: &str) -> Result<crossref::Paper, Error> {
+    let json = fetch_doi_json(db, doi).await?;
+    let paper = serde_json::from_slice(json.as_ref())?;
+    Ok(paper)
 }
 
 fn paper_page(paper: crossref::Paper, abstract_: Option<String>) -> Markup {
@@ -140,10 +146,32 @@ async fn get_abstract(db: &sled::Db, paper: &crossref::Paper) -> Result<Option<S
     }
 }
 
-async fn show_paper(State(db): State<sled::Db>, Path(doi): Path<String>) -> Result<Markup, Error> {
-    let paper = fetch_doi(&db, &doi).await?;
-    let abstract_ = get_abstract(&db, &paper).await?;
-    Ok(paper_page(paper, abstract_))
+fn json_resp(json: &[u8]) -> Response {
+    let buf = Vec::<u8>::from(json);
+    (
+        [(
+            CONTENT_TYPE,
+            HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()),
+        )],
+        buf,
+    )
+        .into_response()
+}
+
+async fn show_paper(
+    State(db): State<sled::Db>,
+    headers: HeaderMap,
+    Path(doi): Path<String>,
+) -> Result<impl IntoResponse, Error> {
+    let paper_json = fetch_doi_json(&db, &doi).await?;
+    match headers.get(ACCEPT).map(|x| x.as_bytes()) {
+        Some(b"application/json") => Ok(json_resp(paper_json.as_ref())),
+        _ => {
+            let paper = serde_json::from_slice(paper_json.as_ref())?;
+            let abstract_ = get_abstract(&db, &paper).await?;
+            Ok(paper_page(paper, abstract_).into_response())
+        }
+    }
 }
 
 #[tokio::main]
