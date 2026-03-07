@@ -36,6 +36,17 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
         }
         body {
             main {
+                nav {
+                    span.type {
+                        ( paper.human_type() )
+                    }
+                    @if let Some(url) = paper.resource_url() {
+                        a href=(url) { "paper" }
+                    }
+                    @if let Some(url) = paper.pdf_url() {
+                        a href=(url) { "PDF" }
+                    }
+                }
                 h1 { (title) };
                 ul.authors {
                     @for author in &paper.author {
@@ -43,16 +54,21 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
                     }
                 };
                 div.published {
-                    @if let Some(event) = &paper.event {
-                        (event)
-                    }
-                }
-                div.links {
-                    @if let Some(url) = paper.resource_url() {
-                        a href=(url) { "paper" }
-                    }
-                    @if let Some(url) = paper.pdf_url() {
-                        a href=(url) { "PDF" }
+                    @if paper.type_ == "journal-article" {
+                        (paper.container_title)
+                        (", volume ")
+                        (paper.volume.as_deref().unwrap_or(""))
+                        (", issue ")
+                        (paper.issue.as_deref().unwrap_or(""))
+                        (", pp. ")
+                        (paper.page)
+                        (".")
+                    } @else if paper.type_ == "proceedings-article" {
+                        ("In ")
+                        (paper.event.as_deref().unwrap_or(""))
+                        (", ")
+                        (paper.published.year())
+                        (".")
                     }
                 }
                 (abs)

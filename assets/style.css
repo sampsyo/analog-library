@@ -77,12 +77,19 @@ main {
   }
 }
 
-.links {
-  a:link,
-  a:visited {
+nav {
+  * {
     display: inline-block;
     margin-right: 1em;
     padding: 0.5em;
+  }
+
+  .type {
+    text-transform: capitalize;
+  }
+
+  a:link,
+  a:visited {
     background: var(--theme-color);
     color: white;
     text-decoration: none;

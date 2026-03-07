@@ -15,6 +15,7 @@ pub struct Paper {
     #[serde(rename = "URL")]
     pub url: String,
     pub issued: Date,
+    pub published: Date,
     pub relation: HashMap<String, Vec<Relation>>,
     pub resource: HashMap<String, Resource>,
     #[serde(rename = "DOI")]
@@ -105,11 +106,32 @@ impl Paper {
             None
         }
     }
+
+    pub fn human_type(&self) -> String {
+        self.type_.replace("-", " ")
+    }
 }
 
 impl Author {
     pub fn name(&self) -> String {
         // TODO Use the `sequence` field.
         format!("{} {}", self.given, self.family)
+    }
+}
+
+impl Date {
+    pub fn year(&self) -> u32 {
+        let (year, _, _) = self.date_parts[0];
+        year
+    }
+
+    pub fn month(&self) -> u32 {
+        let (_, month, _) = self.date_parts[0];
+        month
+    }
+
+    pub fn day(&self) -> u32 {
+        let (_, _, day) = self.date_parts[0];
+        day
     }
 }
