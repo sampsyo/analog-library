@@ -3,7 +3,7 @@ body {
   font-size: 16px;
 
   --theme-color: rgb(179, 27, 27);
-  --faded-color: #aaa;
+  --faded-color: #777;
   --mid-color: rgba(175, 184, 193, 0.2);
   --mono-font:
     ui-monospace, SF Mono, "Anonymous Pro", Inconsolata, Consolas,
@@ -130,7 +130,6 @@ nav {
 .label {
   display: block;
   margin: 1rem 0 0 0;
-  font-weight: bold;
   font-size: 80%;
   text-transform: uppercase;
   margin-right: 1rem;
