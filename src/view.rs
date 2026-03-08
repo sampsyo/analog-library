@@ -3,13 +3,17 @@ use crate::crossref::Paper;
 use crate::jats;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
-pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
+fn css() -> String {
     #[cfg(not(debug_assertions))]
     let css = ASSETS.get("style.css").expect("asset must exist");
 
     #[cfg(debug_assertions)]
     let css = ASSETS.read("style.css").expect("asset must exist").unwrap();
 
+    css
+}
+
+pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
     let title = paper.title();
 
     // Try converting the abstract from JATS XML to HTML we can render. If this
@@ -37,7 +41,7 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
             head {
                 meta charset="utf-8";
                 title { (title) };
-                style { (PreEscaped(css)) };
+                style { (PreEscaped(css())) };
             }
         }
         body {
@@ -89,6 +93,24 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
                     }
                 }
                 (abs)
+            }
+        }
+    }
+}
+
+pub fn home_page() -> Markup {
+    html! {
+        (DOCTYPE)
+        html {
+            head {
+                meta charset="utf-8";
+                title { ("Analog Library: Premium Edition") };
+                style { (PreEscaped(css())) };
+            }
+        }
+        body {
+            main {
+                h1 { ("Analog Library: Premium Edition") }
             }
         }
     }

@@ -126,7 +126,7 @@ async fn main() {
     let db = sled::open("cache.db").unwrap();
 
     let app = Router::new()
-        .route("/", get(|| async { "Hello, World!" }))
+        .route("/", get(|| async { view::home_page() }))
         .route("/doi/{*doi}", get(show_paper))
         .with_state(db);
 
