@@ -3,6 +3,24 @@
 version = 4
 
 [[package]]
+name = "analog-library"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "basset",
+ "maud",
+ "mime",
+ "quick-xml",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sled",
+ "thiserror 2.0.18",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -226,24 +244,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "dull"
-version = "0.1.0"
-dependencies = [
- "axum",
- "basset",
- "maud",
- "mime",
- "quick-xml",
- "reqwest",
- "serde",
- "serde_json",
- "sled",
- "thiserror 2.0.18",
- "tokio",
- "url",
 ]
 
 [[package]]

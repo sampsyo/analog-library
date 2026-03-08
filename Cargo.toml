@@ -1,7 +1,11 @@
 [package]
-name = "dull"
+name = "analog-library"
 version = "0.1.0"
 edition = "2024"
+
+[[bin]]
+name = "al"
+path = "src/main.rs"
 
 [dependencies]
 axum = { version = "0.8", default-features = false, features = ["tokio", "http1"] }

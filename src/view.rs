@@ -83,13 +83,11 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
                         (paper.issue.as_deref().unwrap_or(""))
                         (", pp. ")
                         (paper.page)
-                        (".")
                     } @else if paper.type_ == "proceedings-article" {
                         ("In ")
                         (paper.event.as_deref().unwrap_or(""))
                         (", ")
                         (paper.published.year())
-                        (".")
                     }
                 }
                 (abs)
