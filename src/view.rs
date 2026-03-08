@@ -16,10 +16,16 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
     // fails, just pass through the XML as text.
     // TODO we should probably log the error.
     let abs = match abstract_ {
-        Some(j) => match jats::to_html(&j) {
-            Ok(h) => html! { div.abstract { (PreEscaped(h)) } },
-            Err(_) => html! { div.abstract { (j) } },
-        },
+        Some(j) => {
+            let content = match jats::to_html(&j) {
+                Ok(h) => html! { (PreEscaped(h)) },
+                Err(_) => html! { (j) },
+            };
+            html! {
+                span.label { "Abstract:" } " "
+                div.abstract { (content) }
+            }
+        }
         None => {
             html! { div.abstract.missing { "Abstract missing." } }
         }
@@ -37,22 +43,30 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
         body {
             main {
                 nav {
-                    span.type {
-                        ( paper.human_type() )
+                    div.details {
+                        span.type {
+                            ( paper.human_type() )
+                        }
                     }
-                    @if let Some(url) = paper.resource_url() {
-                        a href=(url) { "paper" }
-                    }
-                    @if let Some(url) = paper.pdf_url() {
-                        a href=(url) { "PDF" }
+                    div.links {
+                        @if let Some(url) = paper.resource_url() {
+                            a href=(url) { "paper" }
+                        }
+                        @if let Some(url) = paper.pdf_url() {
+                            a href=(url) { "PDF" }
+                        }
                     }
                 }
                 h1 { (title) };
-                ul.authors {
-                    @for author in &paper.author {
-                        li { (author.name()) }
+                span.label { "Authors:" } " "
+                div.authors {
+                    span.author { (paper.author[0].name()) }
+                    @for author in &paper.author[1..] {
+                        ", "
+                        span.author { (author.name()) }
                     }
                 };
+                span.label { "Published:" } " "
                 div.published {
                     @if paper.type_ == "journal-article" {
                         (paper.container_title)
