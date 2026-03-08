@@ -82,13 +82,16 @@ fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> sled::Result<()> 
     }))
 }
 
-pub async fn fetch(db: &sled::Db, url: &str) -> Result<Option<sled::IVec>, Error> {
+pub async fn fetch(
+    db: &sled::Db,
+    client: &reqwest::Client,
+    url: &str,
+) -> Result<Option<sled::IVec>, Error> {
     match cache_get(db, url)? {
         Cached::Valid(body) => Ok(Some(body)),
         Cached::Error => Ok(None),
         Cached::Invalid => {
             // Cache miss.
-            let client = reqwest::Client::new();
             let res = client
                 .get(url)
                 .header("Accept", "application/json")
