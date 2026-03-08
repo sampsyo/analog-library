@@ -31,7 +31,7 @@ pub struct Paper {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Date {
-    pub date_parts: Vec<(u32, u32, u32)>,
+    pub date_parts: Vec<Vec<u32>>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -125,17 +125,6 @@ impl Author {
 
 impl Date {
     pub fn year(&self) -> u32 {
-        let (year, _, _) = self.date_parts[0];
-        year
-    }
-
-    pub fn month(&self) -> u32 {
-        let (_, month, _) = self.date_parts[0];
-        month
-    }
-
-    pub fn day(&self) -> u32 {
-        let (_, _, day) = self.date_parts[0];
-        day
+        self.date_parts[0][0]
     }
 }
