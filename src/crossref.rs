@@ -88,15 +88,19 @@ impl Paper {
         self.resource.get("primary").map(|r| r.url.as_ref())
     }
 
-    pub fn is_acm(&self) -> bool {
+    pub fn domain(&self) -> Option<String> {
         if let Some(url) = self.resource_url()
             && let Ok(url) = url::Url::parse(url)
-            && let Some(url::Host::Domain("dl.acm.org")) = url.host()
+            && let Some(url::Host::Domain(dom)) = url.host()
         {
-            true
+            Some(dom.to_string())
         } else {
-            false
+            None
         }
+    }
+
+    pub fn is_acm(&self) -> bool {
+        matches!(self.domain(), Some(d) if d == "dl.acm.org")
     }
 
     pub fn pdf_url(&self) -> Option<String> {

@@ -50,7 +50,7 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
                     }
                     div.links {
                         @if let Some(url) = paper.resource_url() {
-                            a href=(url) { "paper" }
+                            a href=(url) { ( paper.domain().unwrap() ) }
                         }
                         @if let Some(url) = paper.pdf_url() {
                             a href=(url) { "PDF" }
