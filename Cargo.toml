@@ -2,6 +2,7 @@
 name = "analog-library"
 version = "0.1.0"
 edition = "2024"
+repository = "https://github.com/sampsyo/analog-library"
 
 [[bin]]
 name = "al"
@@ -20,3 +21,8 @@ thiserror = "2"
 quick-xml = "0.39"
 url = "2"
 mime = "0.3"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
