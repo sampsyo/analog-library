@@ -41,13 +41,13 @@ impl IntoResponse for Error {
 
 /// Check whether a DOI is valid.
 ///
-/// Matches the regex: [0-9/.]+
+/// Matches the regex: [A-Za-z0-9/\.]+
 fn valid_doi(doi: &str) -> bool {
     if doi.is_empty() {
         return false;
     }
     for c in doi.bytes() {
-        if !(c == b'/' || c == b'.' || c.is_ascii_digit()) {
+        if !(c == b'/' || c == b'.' || c.is_ascii_alphanumeric()) {
             return false;
         }
     }
