@@ -75,6 +75,7 @@ nav {
     margin-right: auto;
     display: flex;
     align-items: center;
+    gap: 1em;
 
     * {
       display: inline-block;

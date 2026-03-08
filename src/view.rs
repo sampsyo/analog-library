@@ -47,6 +47,9 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
                         span.type {
                             ( paper.human_type() )
                         }
+                        span.doi {
+                            ( paper.doi )
+                        }
                     }
                     div.links {
                         @if let Some(url) = paper.resource_url() {
