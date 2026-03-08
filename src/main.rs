@@ -15,7 +15,7 @@ use axum::{
 };
 use basset::assets;
 
-assets!(ASSETS, "assets", ["style.css"]);
+assets!(ASSETS, "assets", ["style.css", "home.html"]);
 
 #[derive(Debug, thiserror::Error)]
 enum Error {
@@ -131,5 +131,6 @@ async fn main() {
         .with_state(db);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8118").await.unwrap();
+    eprintln!("listening on http://{}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }
