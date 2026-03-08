@@ -96,12 +96,14 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
     }
 }
 
-pub fn home_page() -> Markup {
+pub fn home_page(host: &str) -> Markup {
     #[cfg(debug_assertions)]
     let home = ASSETS.read("home.html").expect("asset must exist").unwrap();
 
     #[cfg(not(debug_assertions))]
     let home = ASSETS.get("home.html").expect("asset must exist");
+
+    let home = home.replace("__HOST__", host);
 
     html! {
         (DOCTYPE)

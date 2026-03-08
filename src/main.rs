@@ -121,12 +121,20 @@ async fn show_paper(
     }
 }
 
+async fn show_home(headers: HeaderMap) -> maud::Markup {
+    let host = match headers.get("Host") {
+        Some(h) => h.to_str().unwrap_or("example.com"),
+        None => "example.com",
+    };
+    view::home_page(host)
+}
+
 #[tokio::main]
 async fn main() {
     let db = sled::open("cache.db").unwrap();
 
     let app = Router::new()
-        .route("/", get(|| async { view::home_page() }))
+        .route("/", get(show_home))
         .route("/doi/{*doi}", get(show_paper))
         .with_state(db);
 
