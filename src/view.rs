@@ -3,14 +3,14 @@ use crate::crossref::Paper;
 use crate::jats;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
+#[cfg(debug_assertions)]
 fn css() -> String {
-    #[cfg(not(debug_assertions))]
-    let css = ASSETS.get("style.css").expect("asset must exist");
+    ASSETS.read("style.css").expect("asset must exist").unwrap()
+}
 
-    #[cfg(debug_assertions)]
-    let css = ASSETS.read("style.css").expect("asset must exist").unwrap();
-
-    css
+#[cfg(not(debug_assertions))]
+fn css() -> &'static str {
+    ASSETS.get("style.css").expect("asset must exist")
 }
 
 pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
