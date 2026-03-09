@@ -25,9 +25,13 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
       - name: deploy
+        env:
+          DEPLOY_HOST: scone
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
           echo "$DEPLOY_KEY" > pk
           echo "$DEPLOY_KNOWN_HOSTS" > kh
           chmod 600 pk
-          scp -i pk -o 'UserKnownHostsFile kh' ./target/release/al scone:
-          ssh -i pk -o 'UserKnownHostsFile kh' scone 'killall al'
+          scp -i pk -o 'UserKnownHostsFile kh' ./target/release/al $DEPLOY_HOST:
+          ssh -i pk -o 'UserKnownHostsFile kh' $DEPLOY_HOST 'killall al'
