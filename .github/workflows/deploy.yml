@@ -7,6 +7,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: toolchain
+        run: |
+          apt-get update
+          apt-get install musl-tools
+          rustup target add x86_64-unknown-linux-musl
       - uses: actions/checkout@v6
       - uses: actions/cache@v5
         with:
@@ -17,7 +22,8 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo build --release
+      - name: build
+        run: cargo build --release --target=x86_64-unknown-linux-musl
       - name: Tailscale
         uses: tailscale/github-action@v4
         with:
