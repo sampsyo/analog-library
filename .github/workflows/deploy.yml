@@ -27,7 +27,8 @@ jobs:
       - name: deploy
         run: |
           echo "$DEPLOY_KEY" > pk
-          echo "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 pk
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           scp -i pk ./target/release/al scone:
           ssh -i pk scone 'killall al'
