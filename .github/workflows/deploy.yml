@@ -24,7 +24,10 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
-      - name: scp
-        run: "scp ./target/release/al scone:"
-      - name: restart
-        run: "ssh scone 'killall al'"
+      - name: deploy
+        run: |
+          echo "$DEPLOY_KEY" > pk
+          echo "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 pk
+          scp -i pk ./target/release/al scone:
+          ssh -i pk scone 'killall al'
