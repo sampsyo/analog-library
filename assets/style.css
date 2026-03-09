@@ -135,3 +135,10 @@ nav {
   margin-right: 1rem;
   color: var(--faded-color);
 }
+
+.version {
+  color: var(--faded-color);
+  display: inline-block;
+  margin-left: 1em;
+  font-weight: normal;
+}

@@ -104,6 +104,7 @@ pub fn home_page(host: &str) -> Markup {
     let home = ASSETS.get("home.html").expect("asset must exist");
 
     let home = home.replace("__HOST__", host);
+    let home = home.replace("__VERSION__", env!("CARGO_PKG_VERSION"));
 
     html! {
         (DOCTYPE)
