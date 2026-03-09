@@ -3,14 +3,25 @@ use crate::crossref::Paper;
 use crate::jats;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
-#[cfg(debug_assertions)]
-fn css() -> String {
-    ASSETS.read("style.css").expect("asset must exist").unwrap()
-}
+fn wrap(title: &str, main: Markup) -> Markup {
+    #[cfg(debug_assertions)]
+    let css = ASSETS.read("style.css").expect("asset must exist").unwrap();
 
-#[cfg(not(debug_assertions))]
-fn css() -> &'static str {
-    ASSETS.get("style.css").expect("asset must exist")
+    #[cfg(not(debug_assertions))]
+    let css = ASSETS.get("style.css").expect("asset must exist");
+
+    html! {
+        (DOCTYPE)
+        html {
+            head {
+                meta charset="utf-8";
+                meta name="viewport" content="width=device-width, initial-scale=1";
+                title { (title) };
+                style { (PreEscaped(css)) };
+            }
+        }
+        body { main { (main) } }
+    }
 }
 
 pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
@@ -35,65 +46,56 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
         }
     };
 
-    html! {
-        (DOCTYPE)
-        html {
-            head {
-                meta charset="utf-8";
-                title { (title) };
-                style { (PreEscaped(css())) };
-            }
-        }
-        body {
-            main {
-                nav {
-                    div.details {
-                        span.type {
-                            ( paper.human_type() )
-                        }
-                        span.doi {
-                            ( paper.doi )
-                        }
+    wrap(
+        &title,
+        html! {
+            nav {
+                div.details {
+                    span.type {
+                        ( paper.human_type() )
                     }
-                    div.links {
-                        @if let Some(url) = paper.resource_url() {
-                            a href=(url) { ( paper.domain().unwrap() ) }
-                        }
-                        @if let Some(url) = paper.pdf_url() {
-                            a href=(url) { "PDF" }
-                        }
+                    span.doi {
+                        ( paper.doi )
                     }
                 }
-                h1 { (title) };
-                span.label { "Authors:" } " "
-                div.authors {
-                    span.author { (paper.author[0].name()) }
-                    @for author in &paper.author[1..] {
-                        ", "
-                        span.author { (author.name()) }
+                div.links {
+                    @if let Some(url) = paper.resource_url() {
+                        a href=(url) { ( paper.domain().unwrap() ) }
                     }
-                };
-                span.label { "Published:" } " "
-                div.published {
-                    @if paper.type_ == "journal-article" {
-                        (paper.container_title)
-                        (", volume ")
-                        (paper.volume.as_deref().unwrap_or(""))
-                        (", issue ")
-                        (paper.issue.as_deref().unwrap_or(""))
-                        (", pp. ")
-                        (paper.page)
-                    } @else if paper.type_ == "proceedings-article" {
-                        ("In ")
-                        (paper.event.as_deref().unwrap_or(""))
-                        (", ")
-                        (paper.published.year())
+                    @if let Some(url) = paper.pdf_url() {
+                        a href=(url) { "PDF" }
                     }
                 }
-                (abs)
             }
-        }
-    }
+            h1 { (title) };
+            span.label { "Authors:" } " "
+            div.authors {
+                span.author { (paper.author[0].name()) }
+                @for author in &paper.author[1..] {
+                    ", "
+                    span.author { (author.name()) }
+                }
+            };
+            span.label { "Published:" } " "
+            div.published {
+                @if paper.type_ == "journal-article" {
+                    (paper.container_title)
+                    (", volume ")
+                    (paper.volume.as_deref().unwrap_or(""))
+                    (", issue ")
+                    (paper.issue.as_deref().unwrap_or(""))
+                    (", pp. ")
+                    (paper.page)
+                } @else if paper.type_ == "proceedings-article" {
+                    ("In ")
+                    (paper.event.as_deref().unwrap_or(""))
+                    (", ")
+                    (paper.published.year())
+                }
+            }
+            (abs)
+        },
+    )
 }
 
 pub fn home_page(host: &str) -> Markup {
@@ -106,19 +108,5 @@ pub fn home_page(host: &str) -> Markup {
     let home = home.replace("__HOST__", host);
     let home = home.replace("__VERSION__", env!("CARGO_PKG_VERSION"));
 
-    html! {
-        (DOCTYPE)
-        html {
-            head {
-                meta charset="utf-8";
-                title { ("Analog Library: Premium Edition") };
-                style { (PreEscaped(css())) };
-            }
-        }
-        body {
-            main {
-                (PreEscaped(home))
-            }
-        }
-    }
+    wrap("Analog Library: Premium Edition", PreEscaped(home))
 }
