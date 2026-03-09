@@ -31,6 +31,7 @@ jobs:
           tags: tag:ci
       - name: deploy
         env:
+          EXE: ./target/release/x86_64-unknown-linux-musl/al
           DEPLOY_HOST: scone
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
@@ -40,5 +41,5 @@ jobs:
           echo "$DEPLOY_KNOWN_HOSTS" > kh
           chmod 600 pk
           ssh -i pk -o 'UserKnownHostsFile kh' $DEPLOY_USER@$DEPLOY_HOST 'mv al al.old'
-          scp -i pk -o 'UserKnownHostsFile kh' ./target/release/al $DEPLOY_USER@$DEPLOY_HOST:
+          scp -i pk -o 'UserKnownHostsFile kh' $EXE $DEPLOY_USER@$DEPLOY_HOST:
           ssh -i pk -o 'UserKnownHostsFile kh' $DEPLOY_USER@$DEPLOY_HOST 'killall al || true'
