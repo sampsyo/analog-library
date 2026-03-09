@@ -40,6 +40,6 @@ jobs:
           echo "$DEPLOY_KEY" > pk
           echo "$DEPLOY_KNOWN_HOSTS" > kh
           chmod 600 pk
-          ssh -i pk -o 'UserKnownHostsFile kh' $DEPLOY_USER@$DEPLOY_HOST 'mv al al.old'
+          ssh -i pk -o 'UserKnownHostsFile kh' $DEPLOY_USER@$DEPLOY_HOST 'mv al al.old || true'
           scp -i pk -o 'UserKnownHostsFile kh' $EXE $DEPLOY_USER@$DEPLOY_HOST:
           ssh -i pk -o 'UserKnownHostsFile kh' $DEPLOY_USER@$DEPLOY_HOST 'killall al || true'
