@@ -1,0 +1,21 @@
+on:
+  workflow_dispatch:
+
+name: deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: cargo build --release
+      - name: Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+      - name: scp
+        run: "scp ./target/release/al scone:"
+      - name: restart
+        run: "ssh scone 'killall al'"
