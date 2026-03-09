@@ -31,7 +31,7 @@ jobs:
           tags: tag:ci
       - name: deploy
         env:
-          EXE: ./target/release/x86_64-unknown-linux-musl/al
+          EXE: ./target/x86_64-unknown-linux-musl/release/al
           DEPLOY_HOST: scone
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
