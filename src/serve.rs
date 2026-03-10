@@ -1,5 +1,5 @@
-use crate::core::{Context, Error, fetch_doi, fetch_doi_json};
-use crate::{crossref, view};
+use crate::core::{Context, Error, fetch_doi_json, render_paper};
+use crate::view;
 use axum::{
     Router,
     extract::{Path, State},
@@ -20,31 +20,6 @@ impl IntoResponse for Error {
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (code, msg).into_response()
-    }
-}
-
-/// Find an abstract for this paper.
-///
-/// Some papers in the Crossref database have several "identical" entries, with
-/// different DOIs and different sets of metadata. When a paper is missing an
-/// abstract, it is often the case that other identical entries *do* have an
-/// abstract. So we first try the abstract we already have and, if it's missing,
-/// try all the identical entries to see if they have one we can use.
-async fn get_abstract(ctx: &Context, paper: &crossref::Paper) -> Result<Option<String>, Error> {
-    match &paper.abstract_ {
-        Some(abs) => Ok(Some(abs.to_string())),
-        None => {
-            let mut out = None;
-            for other_doi in paper.identical_dois() {
-                // TODO Maybe try to suppress "not found" errors when fetching other_paper?
-                let other_paper = fetch_doi(ctx, &other_doi).await?;
-                if let Some(abstract_) = other_paper.abstract_ {
-                    out = Some(abstract_.to_string());
-                    break;
-                }
-            }
-            Ok(out)
-        }
     }
 }
 
@@ -70,8 +45,7 @@ async fn show_paper(
         Some(b"application/json") => Ok(json_resp(paper_json.as_ref())),
         _ => {
             let paper = serde_json::from_slice(paper_json.as_ref())?;
-            let abstract_ = get_abstract(&ctx, &paper).await?;
-            Ok(view::paper_page(paper, abstract_).into_response())
+            Ok(render_paper(&ctx, paper).await?.into_response())
         }
     }
 }
