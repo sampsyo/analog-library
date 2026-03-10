@@ -1,3 +1,4 @@
+mod bib;
 mod core;
 mod crossref;
 mod jats;
@@ -36,6 +37,11 @@ async fn run() -> Result<(), MainError> {
             let paper = core::fetch_doi(&ctx, &doi).await?;
             let html = core::render_paper(&ctx, paper).await?;
             println!("{}", html.into_string());
+        }
+        Some("bib") => {
+            let doi: String = args.free_from_str()?;
+            let paper = core::fetch_doi(&ctx, &doi).await?;
+            bib::bibtex(paper);
         }
         Some(cmd) => {
             eprintln!("unknown command {cmd}");

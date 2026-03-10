@@ -22,6 +22,7 @@ quick-xml = "0.39"
 url = "2"
 mime = "0.3"
 pico-args = "0.5"
+biblatex = "0.11"
 
 [profile.profiling]
 inherits = "release"
