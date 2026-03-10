@@ -25,7 +25,15 @@ fn year(y: i32) -> PermissiveType<Date> {
 }
 
 pub fn bibtex(paper: crossref::Paper) -> String {
-    let mut entry = Entry::new("foo".to_string(), EntryType::InProceedings);
+    // Citation keys like `lamport1978`. I'm sure we can do a lot better, but
+    // this is better than nothing.
+    let citekey = format!(
+        "{}{}",
+        paper.author[0].family.to_lowercase(),
+        paper.published.year()
+    );
+
+    let mut entry = Entry::new(citekey, EntryType::InProceedings);
     entry.set_title(verbatim(paper.title()));
     entry.set_date(year(paper.published.year().try_into().unwrap()));
     entry.set_book_title(normal(paper.event.unwrap_or_else(|| "".to_string())));
