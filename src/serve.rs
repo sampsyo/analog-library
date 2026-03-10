@@ -84,7 +84,6 @@ async fn show_home(headers: HeaderMap) -> maud::Markup {
     view::home_page(host)
 }
 
-#[tokio::main]
 pub async fn serve(ctx: Context) {
     let app = Router::new()
         .route("/", get(show_home))
