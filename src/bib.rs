@@ -7,6 +7,10 @@ fn verbatim(s: String) -> Chunks {
     vec![Spanned::zero(Chunk::Verbatim(s))]
 }
 
+fn normal(s: String) -> Chunks {
+    vec![Spanned::zero(Chunk::Normal(s))]
+}
+
 fn year(y: i32) -> PermissiveType<Date> {
     PermissiveType::Typed(Date {
         value: DateValue::At(Datetime {
@@ -24,6 +28,7 @@ pub fn bibtex(paper: crossref::Paper) -> String {
     let mut entry = Entry::new("foo".to_string(), EntryType::InProceedings);
     entry.set_title(verbatim(paper.title()));
     entry.set_date(year(paper.published.year().try_into().unwrap()));
+    entry.set_book_title(normal(paper.event.unwrap_or_else(|| "".to_string())));
     entry.set_author(
         paper
             .author
