@@ -33,10 +33,19 @@ pub fn bibtex(paper: crossref::Paper) -> String {
         paper.published.year()
     );
 
-    let mut entry = Entry::new(citekey, EntryType::InProceedings);
+    // Map types to BibTeX types. Maybe someday we want to handle other kinds,
+    // but the first two will do fine.
+    let type_ = if paper.type_ == "journal-article" {
+        EntryType::Article
+    } else if paper.type_ == "proceedings-article" {
+        EntryType::InProceedings
+    } else {
+        EntryType::Misc
+    };
+
+    // Always set title, author, and DOI.
+    let mut entry = Entry::new(citekey, type_.clone());
     entry.set_title(verbatim(paper.title()));
-    entry.set_date(year(paper.published.year().try_into().unwrap()));
-    entry.set_book_title(normal(paper.event.unwrap_or_else(|| "".to_string())));
     entry.set_author(
         paper
             .author
@@ -49,5 +58,17 @@ pub fn bibtex(paper: crossref::Paper) -> String {
             })
             .collect(),
     );
+    entry.set_doi(paper.doi);
+
+    // Type-specific fields.
+    match type_ {
+        EntryType::Article => todo!(),
+        EntryType::InProceedings => {
+            entry.set_date(year(paper.published.year().try_into().unwrap()));
+            entry.set_book_title(normal(paper.event.unwrap_or_else(|| "".to_string())));
+        }
+        _ => todo!(),
+    };
+
     entry.to_bibtex_string().unwrap()
 }
