@@ -24,6 +24,19 @@ fn year(y: i32) -> PermissiveType<Date> {
     })
 }
 
+fn date(date: crossref::Date) -> PermissiveType<Date> {
+    PermissiveType::Typed(Date {
+        value: DateValue::At(Datetime {
+            year: date.date_parts[0][0].try_into().unwrap(),
+            month: date.date_parts[0].get(1).map(|&i| i.try_into().unwrap()),
+            day: date.date_parts[0].get(2).map(|&i| i.try_into().unwrap()),
+            time: None,
+        }),
+        uncertain: false,
+        approximate: false,
+    })
+}
+
 pub fn bibtex(paper: crossref::Paper) -> String {
     // Citation keys like `lamport1978`. I'm sure we can do a lot better, but
     // this is better than nothing.
@@ -68,6 +81,7 @@ pub fn bibtex(paper: crossref::Paper) -> String {
                 paper.volume.unwrap_or_else(|| "".to_string()),
             )));
             entry.set_issue(normal(paper.issue.unwrap_or_else(|| "".to_string())));
+            entry.set_date(date(paper.published));
         }
         EntryType::InProceedings => {
             entry.set_date(year(paper.published.year().try_into().unwrap()));
