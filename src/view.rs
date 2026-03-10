@@ -108,5 +108,5 @@ pub fn home_page(host: &str) -> Markup {
     let home = home.replace("__HOST__", host);
     let home = home.replace("__VERSION__", env!("CARGO_PKG_VERSION"));
 
-    wrap("Analog Library: Premium Edition", PreEscaped(home))
+    wrap("Analog Library Premium Edition™", PreEscaped(home))
 }
