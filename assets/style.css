@@ -23,6 +23,10 @@ body {
 main {
   margin: 0 auto;
   max-width: 50rem;
+
+  /* Unintuitively, this fixes an issue where <pre> would "expand"
+     the column to be too wide. */
+  min-width: 0;
 }
 
 p,
