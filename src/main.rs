@@ -41,7 +41,8 @@ async fn run() -> Result<(), MainError> {
         Some("bib") => {
             let doi: String = args.free_from_str()?;
             let paper = core::fetch_doi(&ctx, &doi).await?;
-            bib::bibtex(paper);
+            let bibtex = bib::bibtex(paper);
+            println!("{}", bibtex);
         }
         Some(cmd) => {
             eprintln!("unknown command {cmd}");
