@@ -34,7 +34,7 @@ pub fn bibtex(paper: crossref::Paper) -> String {
     );
 
     // Map types to BibTeX types. Maybe someday we want to handle other kinds,
-    // but the first two will do fine.
+    // but the first two will do fine, falling back to `@misc`.
     let type_ = if paper.type_ == "journal-article" {
         EntryType::Article
     } else if paper.type_ == "proceedings-article" {
@@ -62,12 +62,20 @@ pub fn bibtex(paper: crossref::Paper) -> String {
 
     // Type-specific fields.
     match type_ {
-        EntryType::Article => todo!(),
+        EntryType::Article => {
+            entry.set_journal(normal(paper.container_title));
+            entry.set_volume(PermissiveType::Chunks(normal(
+                paper.volume.unwrap_or_else(|| "".to_string()),
+            )));
+            entry.set_issue(normal(paper.issue.unwrap_or_else(|| "".to_string())));
+        }
         EntryType::InProceedings => {
             entry.set_date(year(paper.published.year().try_into().unwrap()));
             entry.set_book_title(normal(paper.event.unwrap_or_else(|| "".to_string())));
         }
-        _ => todo!(),
+        _ => {
+            entry.set_date(year(paper.published.year().try_into().unwrap()));
+        }
     };
 
     entry.to_bibtex_string().unwrap()
