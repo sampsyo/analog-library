@@ -1,4 +1,4 @@
-use crate::ASSETS;
+use crate::core::ASSETS;
 use crate::crossref::Paper;
 use crate::jats;
 use maud::{DOCTYPE, Markup, PreEscaped, html};

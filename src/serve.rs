@@ -1,4 +1,5 @@
-use crate::{Context, Error, crossref, fetch_doi, fetch_doi_json, view};
+use crate::core::{Context, Error, fetch_doi, fetch_doi_json};
+use crate::{crossref, view};
 use axum::{
     Router,
     extract::{Path, State},
