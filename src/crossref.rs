@@ -39,9 +39,9 @@ pub struct Date {
 pub struct Author {
     #[serde(rename = "ORCID")]
     pub orcid: Option<String>,
-    given: String,
+    pub given: String,
     pub family: String,
-    sequence: String,
+    pub sequence: String,
     pub affiliation: Vec<Affiliation>,
 }
 

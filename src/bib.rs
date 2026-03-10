@@ -1,6 +1,6 @@
 use crate::crossref;
 use biblatex::{
-    Chunk, Chunks, Date, DateValue, Datetime, Entry, EntryType, PermissiveType, Spanned,
+    Chunk, Chunks, Date, DateValue, Datetime, Entry, EntryType, PermissiveType, Person, Spanned,
 };
 
 fn verbatim(s: String) -> Chunks {
@@ -24,5 +24,17 @@ pub fn bibtex(paper: crossref::Paper) -> String {
     let mut entry = Entry::new("foo".to_string(), EntryType::InProceedings);
     entry.set_title(verbatim(paper.title()));
     entry.set_date(year(paper.published.year().try_into().unwrap()));
+    entry.set_author(
+        paper
+            .author
+            .into_iter()
+            .map(|a| Person {
+                name: a.family,
+                given_name: a.given,
+                prefix: "".to_string(),
+                suffix: "".to_string(),
+            })
+            .collect(),
+    );
     entry.to_bibtex_string().unwrap()
 }
