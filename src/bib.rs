@@ -1,7 +1,5 @@
-use std::fmt::{Display, Write};
-
 use crate::crossref;
-use biblatex::EntryType;
+use std::fmt::{Display, Write};
 
 /// Format authors for BibTex.
 fn bib_authors(auth: Vec<crossref::Author>) -> String {
@@ -20,6 +18,22 @@ fn bib_authors(auth: Vec<crossref::Author>) -> String {
     out
 }
 
+enum BibType {
+    Article,
+    InProceedings,
+    Misc,
+}
+
+impl Display for BibType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BibType::Article => f.write_str("article"),
+            BibType::InProceedings => f.write_str("inproceedings"),
+            BibType::Misc => f.write_str("misc"),
+        }
+    }
+}
+
 pub fn bibtex(paper: crossref::Paper) -> String {
     // Citation keys like `lamport1978`. I'm sure we can do a lot better, but
     // this is better than nothing.
@@ -32,11 +46,11 @@ pub fn bibtex(paper: crossref::Paper) -> String {
     // Map types to BibTeX types. Maybe someday we want to handle other kinds,
     // but the first two will do fine, falling back to `@misc`.
     let type_ = if paper.type_ == "journal-article" {
-        EntryType::Article
+        BibType::Article
     } else if paper.type_ == "proceedings-article" {
-        EntryType::InProceedings
+        BibType::InProceedings
     } else {
-        EntryType::Misc
+        BibType::Misc
     };
 
     let authors = bib_authors(paper.author);
@@ -46,7 +60,7 @@ pub fn bibtex(paper: crossref::Paper) -> String {
     writeln!(out, "  title = {},", BibStr::verb(&paper.title)).unwrap();
     writeln!(out, "  author = {},", BibStr::new(&authors)).unwrap();
     match type_ {
-        EntryType::Article => {
+        BibType::Article => {
             writeln!(out, "  journal = {},", BibStr::new(&paper.container_title)).unwrap();
             if let Some(volume) = paper.volume {
                 writeln!(out, "  volume = {},", BibStr::new(&volume)).unwrap();
@@ -62,7 +76,7 @@ pub fn bibtex(paper: crossref::Paper) -> String {
                 writeln!(out, "  day = {},", day).unwrap();
             }
         }
-        EntryType::InProceedings => {
+        BibType::InProceedings => {
             if let Some(venue) = paper.event {
                 writeln!(out, "  booktitle = {},", BibStr::new(&venue)).unwrap();
             }
