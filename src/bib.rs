@@ -65,41 +65,49 @@ impl<'a> Display for Entry<'a> {
 
         let type_ = BibType::from_crossref(&self.0.type_);
 
-        writeln!(f, "@{type_}{{{citekey},").unwrap();
-        writeln!(f, "  title = {},", BibStr::verb(&self.0.title)).unwrap();
-        writeln!(f, "  author = {},", BibAuthors(&self.0.author)).unwrap();
+        writeln!(f, "@{type_}{{{citekey},")?;
+        write_pair(f, "title", BibStr::verb(&self.0.title))?;
+        write_pair(f, "author", BibAuthors(&self.0.author))?;
         match type_ {
             BibType::Article => {
-                writeln!(f, "  journal = {},", BibStr::new(&self.0.container_title)).unwrap();
+                write_pair(f, "journal", BibStr::new(&self.0.container_title))?;
                 if let Some(volume) = &self.0.volume {
-                    writeln!(f, "  volume = {},", BibStr::new(volume)).unwrap();
+                    write_pair(f, "volume", BibStr::new(volume))?;
                 }
                 if let Some(issue) = &self.0.issue {
-                    writeln!(f, "  issue = {},", BibStr::new(issue)).unwrap();
+                    write_pair(f, "issue", BibStr::new(issue))?;
                 }
-                writeln!(f, "  year = {},", self.0.published.year()).unwrap();
+                write_pair(f, "year", self.0.published.year())?;
                 if let Some(month) = self.0.published.month() {
-                    writeln!(f, "  month = {},", month).unwrap();
+                    write_pair(f, "month", month)?;
                 }
                 if let Some(day) = self.0.published.day() {
-                    writeln!(f, "  day = {},", day).unwrap();
+                    write_pair(f, "day", day)?;
                 }
             }
             BibType::InProceedings => {
                 if let Some(venue) = &self.0.event {
-                    writeln!(f, "  booktitle = {},", BibStr::new(venue)).unwrap();
+                    write_pair(f, "booktitle", BibStr::new(venue))?;
                 }
-                writeln!(f, "  year = {},", self.0.published.year()).unwrap();
+                write_pair(f, "year", self.0.published.year())?;
             }
             _ => {
-                writeln!(f, "  year = {},", self.0.published.year()).unwrap();
+                write_pair(f, "year", self.0.published.year())?;
             }
         };
-        writeln!(f, "  doi = {},", BibStr::new(&self.0.doi)).unwrap();
-        write!(f, "}}").unwrap();
+        write_pair(f, "doi", BibStr::new(&self.0.doi))?;
+        write!(f, "}}")?;
 
         Ok(())
     }
+}
+
+fn write_pair<T: Display>(
+    f: &mut std::fmt::Formatter<'_>,
+    key: &str,
+    value: T,
+) -> std::fmt::Result {
+    writeln!(f, "  {} = {},", key, value)
 }
 
 struct BibStr<'a> {
