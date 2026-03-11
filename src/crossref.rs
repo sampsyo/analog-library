@@ -127,4 +127,12 @@ impl Date {
     pub fn year(&self) -> u32 {
         self.date_parts[0][0]
     }
+
+    pub fn month(&self) -> Option<u32> {
+        self.date_parts[0].get(1).cloned()
+    }
+
+    pub fn day(&self) -> Option<u32> {
+        self.date_parts[0].get(2).cloned()
+    }
 }

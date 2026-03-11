@@ -1,42 +1,23 @@
 use std::fmt::{Display, Write};
 
 use crate::crossref;
-use biblatex::{
-    Chunk, Chunks, Date, DateValue, Datetime, Entry, EntryType, PermissiveType, Person, Spanned,
-};
+use biblatex::EntryType;
 
-fn verbatim(s: String) -> Chunks {
-    vec![Spanned::zero(Chunk::Verbatim(s))]
-}
+/// Format authors for BibTex.
+fn bib_authors(auth: Vec<crossref::Author>) -> String {
+    let mut out = String::new();
+    let mut first = true;
+    for a in auth.into_iter() {
+        if !first {
+            out.push_str(" and ");
+        }
+        first = false;
 
-fn normal(s: String) -> Chunks {
-    vec![Spanned::zero(Chunk::Normal(s))]
-}
-
-fn year(y: i32) -> PermissiveType<Date> {
-    PermissiveType::Typed(Date {
-        value: DateValue::At(Datetime {
-            year: y,
-            month: None,
-            day: None,
-            time: None,
-        }),
-        uncertain: false,
-        approximate: false,
-    })
-}
-
-fn date(date: crossref::Date) -> PermissiveType<Date> {
-    PermissiveType::Typed(Date {
-        value: DateValue::At(Datetime {
-            year: date.date_parts[0][0].try_into().unwrap(),
-            month: date.date_parts[0].get(1).map(|&i| i.try_into().unwrap()),
-            day: date.date_parts[0].get(2).map(|&i| i.try_into().unwrap()),
-            time: None,
-        }),
-        uncertain: false,
-        approximate: false,
-    })
+        out.push_str(&a.given);
+        out.push(' ');
+        out.push_str(&a.family);
+    }
+    out
 }
 
 pub fn bibtex(paper: crossref::Paper) -> String {
@@ -58,43 +39,43 @@ pub fn bibtex(paper: crossref::Paper) -> String {
         EntryType::Misc
     };
 
-    // Always set title, author, and DOI.
-    let mut entry = Entry::new(citekey, type_.clone());
-    entry.set_title(verbatim(paper.title()));
-    entry.set_author(
-        paper
-            .author
-            .into_iter()
-            .map(|a| Person {
-                name: a.family,
-                given_name: a.given,
-                prefix: "".to_string(),
-                suffix: "".to_string(),
-            })
-            .collect(),
-    );
-    entry.set_doi(paper.doi);
+    let authors = bib_authors(paper.author);
 
-    // Type-specific fields.
+    let mut out = String::new();
+    writeln!(out, "@{type_}{{{citekey},").unwrap();
+    writeln!(out, "  title = {},", BibStr::verb(&paper.title)).unwrap();
+    writeln!(out, "  author = {},", BibStr::new(&authors)).unwrap();
     match type_ {
         EntryType::Article => {
-            entry.set_journal(normal(paper.container_title));
-            entry.set_volume(PermissiveType::Chunks(normal(
-                paper.volume.unwrap_or_default(),
-            )));
-            entry.set_issue(normal(paper.issue.unwrap_or_default()));
-            entry.set_date(date(paper.published));
+            writeln!(out, "  journal = {},", BibStr::new(&paper.container_title)).unwrap();
+            if let Some(volume) = paper.volume {
+                writeln!(out, "  volume = {},", BibStr::new(&volume)).unwrap();
+            }
+            if let Some(issue) = paper.issue {
+                writeln!(out, "  issue = {},", BibStr::new(&issue)).unwrap();
+            }
+            writeln!(out, "  year = {},", paper.published.year()).unwrap();
+            if let Some(month) = paper.published.month() {
+                writeln!(out, "  month = {},", month).unwrap();
+            }
+            if let Some(day) = paper.published.day() {
+                writeln!(out, "  day = {},", day).unwrap();
+            }
         }
         EntryType::InProceedings => {
-            entry.set_date(year(paper.published.year().try_into().unwrap()));
-            entry.set_book_title(normal(paper.event.unwrap_or_default()));
+            if let Some(venue) = paper.event {
+                writeln!(out, "  booktitle = {},", BibStr::new(&venue)).unwrap();
+            }
+            writeln!(out, "  year = {},", paper.published.year()).unwrap();
         }
         _ => {
-            entry.set_date(year(paper.published.year().try_into().unwrap()));
+            writeln!(out, "  year = {},", paper.published.year()).unwrap();
         }
     };
+    writeln!(out, "  doi = {},", BibStr::new(&paper.doi)).unwrap();
+    write!(out, "}}").unwrap();
 
-    entry.to_bibtex_string().unwrap()
+    out
 }
 
 struct BibStr<'a> {
