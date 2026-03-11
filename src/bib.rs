@@ -1,21 +1,23 @@
 use crate::crossref;
 use std::fmt::{Display, Write};
 
-/// Format authors for BibTex.
-fn bib_authors(auth: Vec<crossref::Author>) -> String {
-    let mut out = String::new();
-    let mut first = true;
-    for a in auth.into_iter() {
-        if !first {
-            out.push_str(" and ");
-        }
-        first = false;
+struct BibAuthors<'a>(&'a [crossref::Author]);
 
-        out.push_str(&a.given);
-        out.push(' ');
-        out.push_str(&a.family);
+impl<'a> Display for BibAuthors<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut first = true;
+        for a in self.0.iter() {
+            if !first {
+                f.write_str(" and ")?;
+            }
+            first = false;
+
+            f.write_str(&a.given)?;
+            f.write_char(' ')?;
+            f.write_str(&a.family)?;
+        }
+        Ok(())
     }
-    out
 }
 
 enum BibType {
@@ -49,53 +51,55 @@ impl Display for BibType {
     }
 }
 
-pub fn bibtex(paper: crossref::Paper) -> String {
-    // Citation keys like `lamport1978`. I'm sure we can do a lot better, but
-    // this is better than nothing.
-    let citekey = format!(
-        "{}{}",
-        paper.author[0].family.to_lowercase(),
-        paper.published.year()
-    );
+pub struct Entry<'a>(pub &'a crossref::Paper);
 
-    let type_ = BibType::from_crossref(&paper.type_);
-    let authors = bib_authors(paper.author);
+impl<'a> Display for Entry<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Citation keys like `lamport1978`. I'm sure we can do a lot better, but
+        // this is better than nothing.
+        let citekey = format!(
+            "{}{}",
+            self.0.author[0].family.to_lowercase(),
+            self.0.published.year()
+        );
 
-    let mut out = String::new();
-    writeln!(out, "@{type_}{{{citekey},").unwrap();
-    writeln!(out, "  title = {},", BibStr::verb(&paper.title)).unwrap();
-    writeln!(out, "  author = {},", BibStr::new(&authors)).unwrap();
-    match type_ {
-        BibType::Article => {
-            writeln!(out, "  journal = {},", BibStr::new(&paper.container_title)).unwrap();
-            if let Some(volume) = paper.volume {
-                writeln!(out, "  volume = {},", BibStr::new(&volume)).unwrap();
-            }
-            if let Some(issue) = paper.issue {
-                writeln!(out, "  issue = {},", BibStr::new(&issue)).unwrap();
-            }
-            writeln!(out, "  year = {},", paper.published.year()).unwrap();
-            if let Some(month) = paper.published.month() {
-                writeln!(out, "  month = {},", month).unwrap();
-            }
-            if let Some(day) = paper.published.day() {
-                writeln!(out, "  day = {},", day).unwrap();
-            }
-        }
-        BibType::InProceedings => {
-            if let Some(venue) = paper.event {
-                writeln!(out, "  booktitle = {},", BibStr::new(&venue)).unwrap();
-            }
-            writeln!(out, "  year = {},", paper.published.year()).unwrap();
-        }
-        _ => {
-            writeln!(out, "  year = {},", paper.published.year()).unwrap();
-        }
-    };
-    writeln!(out, "  doi = {},", BibStr::new(&paper.doi)).unwrap();
-    write!(out, "}}").unwrap();
+        let type_ = BibType::from_crossref(&self.0.type_);
 
-    out
+        writeln!(f, "@{type_}{{{citekey},").unwrap();
+        writeln!(f, "  title = {},", BibStr::verb(&self.0.title)).unwrap();
+        writeln!(f, "  author = {},", BibAuthors(&self.0.author)).unwrap();
+        match type_ {
+            BibType::Article => {
+                writeln!(f, "  journal = {},", BibStr::new(&self.0.container_title)).unwrap();
+                if let Some(volume) = &self.0.volume {
+                    writeln!(f, "  volume = {},", BibStr::new(volume)).unwrap();
+                }
+                if let Some(issue) = &self.0.issue {
+                    writeln!(f, "  issue = {},", BibStr::new(issue)).unwrap();
+                }
+                writeln!(f, "  year = {},", self.0.published.year()).unwrap();
+                if let Some(month) = self.0.published.month() {
+                    writeln!(f, "  month = {},", month).unwrap();
+                }
+                if let Some(day) = self.0.published.day() {
+                    writeln!(f, "  day = {},", day).unwrap();
+                }
+            }
+            BibType::InProceedings => {
+                if let Some(venue) = &self.0.event {
+                    writeln!(f, "  booktitle = {},", BibStr::new(venue)).unwrap();
+                }
+                writeln!(f, "  year = {},", self.0.published.year()).unwrap();
+            }
+            _ => {
+                writeln!(f, "  year = {},", self.0.published.year()).unwrap();
+            }
+        };
+        writeln!(f, "  doi = {},", BibStr::new(&self.0.doi)).unwrap();
+        write!(f, "}}").unwrap();
+
+        Ok(())
+    }
 }
 
 struct BibStr<'a> {
