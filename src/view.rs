@@ -38,12 +38,11 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
                 Err(_) => html! { (j) },
             };
             html! {
-                span.label { "Abstract:" } " "
                 div.abstract { (content) }
             }
         }
         None => {
-            html! { div.abstract.missing { "Abstract missing." } }
+            html! { div.abstract.missing { "Data missing." } }
         }
     };
 
@@ -94,6 +93,7 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
                     (paper.published.year())
                 }
             }
+            span.label { "Abstract:" } " "
             (abs)
             span.label { "BibTeX:" } " "
             pre.bibtex {

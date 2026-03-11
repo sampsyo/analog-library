@@ -114,12 +114,11 @@ nav {
   p:nth-child(1) {
     margin-top: 0;
   }
+}
 
-  &.missing {
-    padding: 1em;
-    background: var(--mid-color);
-    font-style: italic;
-  }
+.missing {
+  font-style: italic;
+  color: var(--faded-color);
 }
 
 .authors {
