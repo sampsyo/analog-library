@@ -84,8 +84,10 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
                     (paper.volume.as_deref().unwrap_or(""))
                     (", issue ")
                     (paper.issue.as_deref().unwrap_or(""))
-                    (", pp. ")
-                    (paper.page)
+                    @if let Some(page) = &paper.page {
+                        (", pp. ")
+                        (page)
+                    }
                 } @else if paper.type_ == "proceedings-article" {
                     ("In ")
                     (paper.event.as_deref().unwrap_or(""))

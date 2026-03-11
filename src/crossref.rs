@@ -22,7 +22,7 @@ pub struct Paper {
     pub doi: String,
 
     pub container_title: String,
-    pub page: String,
+    pub page: Option<String>,
     pub volume: Option<String>,
     pub issue: Option<String>,
     pub event: Option<String>,
