@@ -41,13 +41,23 @@ pub enum Error {
 
 /// Check whether a DOI is valid.
 ///
-/// Matches the regex: [A-Za-z0-9/\.]+
+/// Matches the regex: 10\.[0-9]+/[A-Za-z0-9\.-_;()/]+
+/// As suggested by Crossref staff:
+/// https://community.crossref.org/t/question-about-characters-in-doi-suffixes/3867/2
 fn valid_doi(doi: &str) -> bool {
-    if doi.is_empty() {
+    if !doi.starts_with("10.") {
         return false;
     }
-    for c in doi.bytes() {
-        if !(c == b'/' || c == b'.' || c.is_ascii_alphanumeric()) {
+    for c in doi.bytes().skip(3) {
+        if !(c.is_ascii_alphanumeric()
+            || c == b'.'
+            || c == b'-'
+            || c == b'_'
+            || c == b';'
+            || c == b'('
+            || c == b')'
+            || c == b'/')
+        {
             return false;
         }
     }
