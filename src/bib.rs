@@ -1,32 +1,14 @@
 use crate::crossref;
 use std::fmt::{Display, Write};
 
-struct BibAuthors<'a>(&'a [crossref::Author]);
-
-impl<'a> Display for BibAuthors<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut first = true;
-        for a in self.0.iter() {
-            if !first {
-                f.write_str(" and ")?;
-            }
-            first = false;
-
-            f.write_str(&a.given)?;
-            f.write_char(' ')?;
-            f.write_str(&a.family)?;
-        }
-        Ok(())
-    }
-}
-
-enum BibType {
+/// The type of a BibTeX entry.
+enum Type {
     Article,
     InProceedings,
     Misc,
 }
 
-impl BibType {
+impl Type {
     /// Map a Crossref API type string to a BibTeX type.
     fn from_crossref(type_: &str) -> Self {
         // Maybe someday we want to handle other kinds, but these two will do
@@ -41,16 +23,17 @@ impl BibType {
     }
 }
 
-impl Display for BibType {
+impl Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BibType::Article => f.write_str("article"),
-            BibType::InProceedings => f.write_str("inproceedings"),
-            BibType::Misc => f.write_str("misc"),
+            Type::Article => f.write_str("article"),
+            Type::InProceedings => f.write_str("inproceedings"),
+            Type::Misc => f.write_str("misc"),
         }
     }
 }
 
+/// A BibTeX entry for a single paper.
 pub struct Entry<'a>(pub &'a crossref::Paper);
 
 impl<'a> Display for Entry<'a> {
@@ -63,13 +46,13 @@ impl<'a> Display for Entry<'a> {
             self.0.published.year()
         );
 
-        let type_ = BibType::from_crossref(&self.0.type_);
+        let type_ = Type::from_crossref(&self.0.type_);
 
         writeln!(f, "@{type_}{{{citekey},")?;
         write_pair(f, "title", BibStr::verb(&self.0.title))?;
-        write_pair(f, "author", BibAuthors(&self.0.author))?;
+        write_pair(f, "author", Authors(&self.0.author))?;
         match type_ {
-            BibType::Article => {
+            Type::Article => {
                 write_pair(f, "journal", BibStr::new(&self.0.container_title))?;
                 if let Some(volume) = &self.0.volume {
                     write_pair(f, "volume", BibStr::new(volume))?;
@@ -85,7 +68,7 @@ impl<'a> Display for Entry<'a> {
                     write_pair(f, "day", day)?;
                 }
             }
-            BibType::InProceedings => {
+            Type::InProceedings => {
                 if let Some(venue) = &self.0.event {
                     write_pair(f, "booktitle", BibStr::new(venue))?;
                 }
@@ -102,6 +85,7 @@ impl<'a> Display for Entry<'a> {
     }
 }
 
+/// Write a key/value pair in a BibTeX entry.
 fn write_pair<T: Display>(
     f: &mut std::fmt::Formatter<'_>,
     key: &str,
@@ -110,6 +94,27 @@ fn write_pair<T: Display>(
     writeln!(f, "  {} = {},", key, value)
 }
 
+/// A list of authors formatted for BibTeX.
+struct Authors<'a>(&'a [crossref::Author]);
+
+impl<'a> Display for Authors<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut first = true;
+        for a in self.0.iter() {
+            if !first {
+                f.write_str(" and ")?;
+            }
+            first = false;
+
+            f.write_str(&a.given)?;
+            f.write_char(' ')?;
+            f.write_str(&a.family)?;
+        }
+        Ok(())
+    }
+}
+
+/// A string formatted for a BibTeX value.
 struct BibStr<'a> {
     str: &'a str,
     verbatim: bool,
