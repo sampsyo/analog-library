@@ -53,32 +53,22 @@ impl<'a> Display for Entry<'a> {
         write_pair(f, "author", Authors(&self.0.author))?;
         match type_ {
             Type::Article => {
-                write_pair(f, "journal", BibStr::new(&self.0.container_title))?;
-                if let Some(volume) = &self.0.volume {
-                    write_pair(f, "volume", BibStr::new(volume))?;
-                }
-                if let Some(issue) = &self.0.issue {
-                    write_pair(f, "issue", BibStr::new(issue))?;
-                }
+                write_str(f, "journal", &self.0.container_title)?;
+                write_str_opt(f, "volume", self.0.volume.as_deref())?;
+                write_str_opt(f, "issue", self.0.issue.as_deref())?;
                 write_pair(f, "year", self.0.published.year())?;
-                if let Some(month) = self.0.published.month() {
-                    write_pair(f, "month", month)?;
-                }
-                if let Some(day) = self.0.published.day() {
-                    write_pair(f, "day", day)?;
-                }
+                write_pair_opt(f, "month", self.0.published.month())?;
+                write_pair_opt(f, "day", self.0.published.day())?;
             }
             Type::InProceedings => {
-                if let Some(venue) = &self.0.event {
-                    write_pair(f, "booktitle", BibStr::new(venue))?;
-                }
+                write_str_opt(f, "booktitle", self.0.event.as_deref())?;
                 write_pair(f, "year", self.0.published.year())?;
             }
             _ => {
                 write_pair(f, "year", self.0.published.year())?;
             }
         };
-        write_pair(f, "doi", BibStr::new(&self.0.doi))?;
+        write_str(f, "doi", &self.0.doi)?;
         write!(f, "}}")?;
 
         Ok(())
@@ -92,6 +82,37 @@ fn write_pair<T: Display>(
     value: T,
 ) -> std::fmt::Result {
     writeln!(f, "  {} = {},", key, value)
+}
+
+/// Like `write_pair`, but only write anything if the value is Some.
+fn write_pair_opt<T: Display>(
+    f: &mut std::fmt::Formatter<'_>,
+    key: &str,
+    value: Option<T>,
+) -> std::fmt::Result {
+    if let Some(v) = value {
+        write_pair(f, key, v)
+    } else {
+        Ok(())
+    }
+}
+
+/// Like `write_pair`, but just for plain strings.
+fn write_str(f: &mut std::fmt::Formatter<'_>, key: &str, value: &str) -> std::fmt::Result {
+    writeln!(f, "  {} = {},", key, BibStr::new(value))
+}
+
+/// Like `write_str`, but just for optional strings.
+fn write_str_opt(
+    f: &mut std::fmt::Formatter<'_>,
+    key: &str,
+    value: Option<&str>,
+) -> std::fmt::Result {
+    if let Some(s) = value {
+        write_str(f, key, s)
+    } else {
+        Ok(())
+    }
 }
 
 /// A list of authors formatted for BibTeX.
