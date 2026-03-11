@@ -50,7 +50,7 @@ impl<'a> Display for Entry<'a> {
 
         writeln!(f, "@{type_}{{{citekey},")?;
         write_pair(f, "title", BibStr::verb(&self.0.title))?;
-        write_pair(f, "author", Authors(&self.0.author))?;
+        write_pair(f, "author", BibStr::new(Authors(&self.0.author)))?;
         match type_ {
             Type::Article => {
                 write_str(f, "journal", &self.0.container_title)?;
@@ -136,22 +136,22 @@ impl<'a> Display for Authors<'a> {
 }
 
 /// A string formatted for a BibTeX value.
-struct BibStr<'a> {
-    str: &'a str,
+struct BibStr<T: Display> {
+    value: T,
     verbatim: bool,
 }
 
-impl<'a> BibStr<'a> {
-    fn new(str: &'a str) -> Self {
+impl<T: Display> BibStr<T> {
+    fn new(value: T) -> Self {
         BibStr {
-            str,
+            value,
             verbatim: false,
         }
     }
 
-    fn verb(str: &'a str) -> Self {
+    fn verb(value: T) -> Self {
         BibStr {
-            str,
+            value,
             verbatim: true,
         }
     }
@@ -166,14 +166,14 @@ impl<'a> BibStr<'a> {
     }
 }
 
-impl<'a> Display for BibStr<'a> {
+impl<T: Display> Display for BibStr<T> {
     // Inspired by biblatex::ChunkExt::to_biblatex_string
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_char('{')?;
         if self.verbatim {
             f.write_char('{')?;
         }
-        for c in self.str.chars() {
+        for c in self.value.to_string().chars() {
             if self.should_escape(c) {
                 f.write_char('\\')?;
             }
