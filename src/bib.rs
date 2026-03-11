@@ -1,3 +1,5 @@
+use std::fmt::{Display, Write};
+
 use crate::crossref;
 use biblatex::{
     Chunk, Chunks, Date, DateValue, Datetime, Entry, EntryType, PermissiveType, Person, Spanned,
@@ -93,4 +95,84 @@ pub fn bibtex(paper: crossref::Paper) -> String {
     };
 
     entry.to_bibtex_string().unwrap()
+}
+
+struct BibStr<'a> {
+    str: &'a str,
+    verbatim: bool,
+}
+
+impl<'a> BibStr<'a> {
+    fn new(str: &'a str) -> Self {
+        BibStr {
+            str,
+            verbatim: false,
+        }
+    }
+
+    fn verb(str: &'a str) -> Self {
+        BibStr {
+            str,
+            verbatim: true,
+        }
+    }
+
+    // Inspired by biblatex::resolve::is_escapable()
+    fn should_escape(&self, c: char) -> bool {
+        match c {
+            '{' | '}' | '\\' => true,
+            '~' | '^' | '#' | '&' | '%' | '$' | '_' if !self.verbatim => true,
+            _ => false,
+        }
+    }
+}
+
+impl<'a> Display for BibStr<'a> {
+    // Inspired by biblatex::ChunkExt::to_biblatex_string
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_char('{')?;
+        if self.verbatim {
+            f.write_char('{')?;
+        }
+        for c in self.str.chars() {
+            if self.should_escape(c) {
+                f.write_char('\\')?;
+            }
+            f.write_char(c)?;
+        }
+        f.write_char('}')?;
+        if self.verbatim {
+            f.write_char('}')?;
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_plain() {
+        let s = "hi there";
+        assert_eq!(format!("{}", BibStr::new(s)), r"{hi there}");
+    }
+
+    #[test]
+    fn test_verb() {
+        let s = "hi there";
+        assert_eq!(format!("{}", BibStr::verb(s)), r"{{hi there}}");
+    }
+
+    #[test]
+    fn test_ampersand() {
+        let s = "hi & there";
+        assert_eq!(format!("{}", BibStr::new(s)), r"{hi \& there}");
+    }
+
+    #[test]
+    fn test_ampersand_verb() {
+        let s = "hi & there";
+        assert_eq!(format!("{}", BibStr::verb(s)), r"{{hi & there}}");
+    }
 }
