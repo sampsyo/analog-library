@@ -24,6 +24,21 @@ enum BibType {
     Misc,
 }
 
+impl BibType {
+    /// Map a Crossref API type string to a BibTeX type.
+    fn from_crossref(type_: &str) -> Self {
+        // Maybe someday we want to handle other kinds, but these two will do
+        // just fine. Falling back to `@misc` for anything else.
+        if type_ == "journal-article" {
+            Self::Article
+        } else if type_ == "proceedings-article" {
+            Self::InProceedings
+        } else {
+            Self::Misc
+        }
+    }
+}
+
 impl Display for BibType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -43,16 +58,7 @@ pub fn bibtex(paper: crossref::Paper) -> String {
         paper.published.year()
     );
 
-    // Map types to BibTeX types. Maybe someday we want to handle other kinds,
-    // but the first two will do fine, falling back to `@misc`.
-    let type_ = if paper.type_ == "journal-article" {
-        BibType::Article
-    } else if paper.type_ == "proceedings-article" {
-        BibType::InProceedings
-    } else {
-        BibType::Misc
-    };
-
+    let type_ = BibType::from_crossref(&paper.type_);
     let authors = bib_authors(paper.author);
 
     let mut out = String::new();
