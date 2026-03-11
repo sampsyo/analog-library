@@ -1,3 +1,4 @@
+use crate::bib;
 use crate::core::ASSETS;
 use crate::crossref::Paper;
 use crate::jats;
@@ -94,6 +95,10 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
                 }
             }
             (abs)
+            span.label { "BibTeX:" } " "
+            pre.bibtex {
+                (bib::Entry(&paper))
+            }
         },
     )
 }

@@ -55,7 +55,7 @@ code {
 code {
   background: var(--mid-color);
 }
-pre code {
+pre {
   display: block;
   border-radius: 3px;
 
@@ -138,6 +138,12 @@ nav {
   text-transform: uppercase;
   margin-right: 1rem;
   color: var(--faded-color);
+}
+
+pre.bibtex {
+  margin-top: 0;
+  padding-top: 0.2rem;
+  white-space: pre-wrap;
 }
 
 .version {
