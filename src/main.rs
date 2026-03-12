@@ -29,22 +29,22 @@ async fn run() -> Result<(), MainError> {
         }
         Some("json") => {
             let doi: String = args.free_from_str()?;
-            let json = core::fetch_doi_json(&ctx, &doi).await?;
+            let json = ctx.fetch_doi_json(&doi).await?;
             std::io::stdout().write_all(json.as_ref())?;
         }
         Some("html") => {
             let doi: String = args.free_from_str()?;
-            let paper = core::fetch_doi(&ctx, &doi).await?;
-            let html = core::render_paper(&ctx, paper).await?;
+            let paper = ctx.fetch_doi(&doi).await?;
+            let html = ctx.render_paper(paper).await?;
             println!("{}", html.into_string());
         }
         Some("bib") => {
             let doi: String = args.free_from_str()?;
-            let paper = core::fetch_doi(&ctx, &doi).await?;
+            let paper = ctx.fetch_doi(&doi).await?;
             println!("{}", bib::Entry(&paper));
         }
         Some("cache") => {
-            core::dump_cache(&ctx)?;
+            ctx.dump_cache()?;
         }
         Some(cmd) => {
             eprintln!("unknown command {cmd}");

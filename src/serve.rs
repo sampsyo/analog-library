@@ -1,4 +1,4 @@
-use crate::core::{Context, Error, fetch_doi_json, render_paper};
+use crate::core::{Context, Error};
 use crate::view;
 use axum::{
     Router,
@@ -40,12 +40,12 @@ async fn show_paper(
     headers: HeaderMap,
     Path(doi): Path<String>,
 ) -> Result<impl IntoResponse, Error> {
-    let paper_json = fetch_doi_json(&ctx, &doi).await?;
+    let paper_json = ctx.fetch_doi_json(&doi).await?;
     match headers.get(ACCEPT).map(|x| x.as_bytes()) {
         Some(b"application/json") => Ok(json_resp(paper_json.as_ref())),
         _ => {
             let paper = serde_json::from_slice(paper_json.as_ref())?;
-            Ok(render_paper(&ctx, paper).await?.into_response())
+            Ok(ctx.render_paper(paper).await?.into_response())
         }
     }
 }
