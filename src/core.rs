@@ -14,8 +14,8 @@ fn user_agent() -> String {
 
 #[derive(Clone)]
 pub struct Context {
-    db: sled::Db,
-    client: reqwest::Client,
+    pub db: sled::Db,
+    pub client: reqwest::Client,
 }
 
 impl Default for Context {

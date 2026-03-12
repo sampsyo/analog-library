@@ -34,14 +34,31 @@ fn unwrap_res<T>(res: sled::transaction::TransactionResult<T, Infallible>) -> sl
     })
 }
 
+/// Decode a timestamp from a "seconds from epoch" value.
+///
+/// Panics if the data is not exactly 8 bytes.
+fn time_from_bytes(data: sled::IVec) -> SystemTime {
+    let ts = u64::from_le_bytes(data.as_ref().try_into().unwrap());
+    UNIX_EPOCH + Duration::from_secs(ts)
+}
+
+/// Encode a timestamp for storage.
+fn time_to_bytes(time: SystemTime) -> sled::IVec {
+    (&time
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        .to_le_bytes())
+        .into()
+}
+
 /// Get the current cached URL contents.
 fn cache_get(db: &sled::Db, url: &str) -> sled::Result<Cached<sled::IVec>> {
     let ts_key = format!("ts:{url}");
 
     unwrap_res(db.transaction(|tx| {
         if let Some(ts_data) = tx.get(ts_key.as_bytes())? {
-            let ts = u64::from_le_bytes(ts_data.as_ref().try_into().unwrap());
-            let time = UNIX_EPOCH + Duration::from_secs(ts);
+            let time = time_from_bytes(ts_data);
 
             // Is the cache entry expired?
             let age = SystemTime::now().duration_since(time).unwrap();
@@ -65,11 +82,7 @@ fn cache_get(db: &sled::Db, url: &str) -> sled::Result<Cached<sled::IVec>> {
 /// Set the current cached contents of the URL.
 fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> sled::Result<()> {
     let ts_key = format!("ts:{url}");
-    let ts_data = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        .to_le_bytes();
+    let ts_data = time_to_bytes(SystemTime::now());
 
     unwrap_res(db.transaction(|tx| {
         tx.insert(ts_key.as_bytes(), &ts_data)?;
@@ -80,6 +93,25 @@ fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> sled::Result<()> 
         };
         Ok(())
     }))
+}
+
+pub fn cache_scan(
+    db: &sled::Db,
+) -> impl Iterator<Item = sled::Result<(sled::IVec, SystemTime, sled::IVec)>> {
+    db.scan_prefix(b"ts:")
+        .map(|row| {
+            let (key, ts_data) = row?;
+
+            let url = key.subslice(3, key.len() - 3);
+
+            let time = time_from_bytes(ts_data);
+
+            match db.get(&url)? {
+                Some(body) => Ok(Some((url, time, body))),
+                None => Ok(None),
+            }
+        })
+        .filter_map(|opt| opt.transpose())
 }
 
 pub async fn fetch(

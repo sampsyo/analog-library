@@ -43,9 +43,16 @@ async fn run() -> Result<(), MainError> {
             let paper = core::fetch_doi(&ctx, &doi).await?;
             println!("{}", bib::Entry(&paper));
         }
+        Some("cache") => {
+            for entry in webcache::cache_scan(&ctx.db) {
+                let (_, time, json) = entry.unwrap(); // TODO
+                let paper: crossref::Paper = serde_json::from_slice(json.as_ref()).unwrap(); // TODO
+                dbg!(time, &paper.doi, paper.title());
+            }
+        }
         Some(cmd) => {
             eprintln!("unknown command {cmd}");
-            eprintln!("available commands are: serve");
+            eprintln!("available commands are: serve, json, html, bib, cache");
             std::process::exit(1);
         }
     }
