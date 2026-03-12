@@ -97,15 +97,12 @@ fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> sled::Result<()> 
 
 pub fn cache_scan(
     db: &sled::Db,
-) -> impl Iterator<Item = Result<(sled::IVec, SystemTime, sled::IVec), Error>> {
+) -> impl Iterator<Item = Result<(sled::IVec, u64, sled::IVec), Error>> {
     db.scan_prefix(b"ts:")
         .map(|row| {
             let (key, ts_data) = row?;
-
             let url = key.subslice(3, key.len() - 3);
-
-            let time = time_from_bytes(ts_data);
-
+            let time = u64::from_le_bytes(ts_data.as_ref().try_into().unwrap());
             match db.get(&url)? {
                 Some(body) => Ok(Some((url, time, body))),
                 None => Ok(None),

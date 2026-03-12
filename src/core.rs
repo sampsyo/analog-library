@@ -114,7 +114,7 @@ pub fn dump_cache(ctx: &Context) -> Result<(), Error> {
     for entry in webcache::cache_scan(&ctx.db) {
         let (_, time, json) = entry?;
         let paper: crossref::Paper = serde_json::from_slice(json.as_ref())?;
-        dbg!(time, &paper.doi, paper.title());
+        println!("{} {} {}", time, &paper.doi, paper.title());
     }
     Ok(())
 }
