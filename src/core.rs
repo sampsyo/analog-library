@@ -109,3 +109,12 @@ pub async fn render_paper(ctx: &Context, paper: crossref::Paper) -> Result<Marku
     let abstract_ = get_abstract(ctx, &paper).await?;
     Ok(view::paper_page(paper, abstract_))
 }
+
+pub fn dump_cache(ctx: &Context) -> Result<(), Error> {
+    for entry in webcache::cache_scan(&ctx.db) {
+        let (_, time, json) = entry?;
+        let paper: crossref::Paper = serde_json::from_slice(json.as_ref())?;
+        dbg!(time, &paper.doi, paper.title());
+    }
+    Ok(())
+}

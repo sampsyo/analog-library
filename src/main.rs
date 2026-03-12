@@ -44,11 +44,7 @@ async fn run() -> Result<(), MainError> {
             println!("{}", bib::Entry(&paper));
         }
         Some("cache") => {
-            for entry in webcache::cache_scan(&ctx.db) {
-                let (_, time, json) = entry.unwrap(); // TODO
-                let paper: crossref::Paper = serde_json::from_slice(json.as_ref()).unwrap(); // TODO
-                dbg!(time, &paper.doi, paper.title());
-            }
+            core::dump_cache(&ctx)?;
         }
         Some(cmd) => {
             eprintln!("unknown command {cmd}");

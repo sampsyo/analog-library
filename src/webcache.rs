@@ -97,7 +97,7 @@ fn cache_set(db: &sled::Db, url: &str, body: Cached<&[u8]>) -> sled::Result<()> 
 
 pub fn cache_scan(
     db: &sled::Db,
-) -> impl Iterator<Item = sled::Result<(sled::IVec, SystemTime, sled::IVec)>> {
+) -> impl Iterator<Item = Result<(sled::IVec, SystemTime, sled::IVec), Error>> {
     db.scan_prefix(b"ts:")
         .map(|row| {
             let (key, ts_data) = row?;
