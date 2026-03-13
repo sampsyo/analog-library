@@ -38,17 +38,9 @@ pub struct Entry<'a>(pub &'a crossref::Paper);
 
 impl<'a> Display for Entry<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // Citation keys like `lamport1978`. I'm sure we can do a lot better, but
-        // this is better than nothing.
-        let citekey = format!(
-            "{}{}",
-            self.0.author[0].family.to_lowercase(),
-            self.0.published.year()
-        );
-
         let type_ = Type::from_crossref(&self.0.type_);
-
-        writeln!(f, "@{type_}{{{citekey},")?;
+        let key = citekey(self.0);
+        writeln!(f, "@{type_}{{{key},")?;
         write_pair(f, "title", BibStr::verb(&self.0.title))?;
         write_pair(f, "author", BibStr::new(Authors(&self.0.author)))?;
         match type_ {
@@ -185,6 +177,25 @@ impl<T: Display> Display for BibStr<T> {
         }
         Ok(())
     }
+}
+
+/// Generate a BibTeX citation key for a paper.
+///
+/// These citation keys currently look like `lamport1978`. I'm sure we can do a
+/// lot better, but this is better than nothing.
+fn citekey(paper: &crossref::Paper) -> String {
+    let author: String = paper.author[0]
+        .family
+        .chars()
+        .filter_map(|c| {
+            if c.is_ascii_alphabetic() {
+                Some(c.to_ascii_lowercase())
+            } else {
+                None
+            }
+        })
+        .collect();
+    format!("{}{}", author, paper.published.year())
 }
 
 #[cfg(test)]
