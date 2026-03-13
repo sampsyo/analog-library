@@ -93,7 +93,13 @@ impl Paper {
             && let Ok(url) = url::Url::parse(url)
             && let Some(url::Host::Domain(dom)) = url.host()
         {
-            Some(dom.to_string())
+            Some(
+                match dom.strip_prefix("www.") {
+                    Some(s) => s,
+                    None => dom,
+                }
+                .to_string(),
+            )
         } else {
             None
         }
