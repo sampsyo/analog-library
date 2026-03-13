@@ -16,13 +16,25 @@ pub fn to_html(jats: &str) -> Result<String, Error> {
     let mut reader = Reader::from_str(jats);
     let mut writer = Writer::new(Cursor::new(Vec::new()));
 
+    let mut ignore = false;
     loop {
+        if ignore {
+            if let Event::End(e) = reader.read_event()?
+                && e.name().as_ref() == b"jats:title"
+            {
+                ignore = false;
+            }
+            continue;
+        }
+
         match reader.read_event()? {
             Event::Start(e) => {
                 if let Some(html_tag) = trans_tag(e.name().as_ref()) {
                     writer
                         .write_event(Event::Start(BytesStart::new(html_tag)))
                         .unwrap();
+                } else if e.name().as_ref() == b"jats:title" {
+                    ignore = true;
                 } else {
                     return Err(Error::UnknownTag);
                 }
@@ -90,6 +102,13 @@ mod tests {
     fn test_bold() {
         let jats = "<jats:bold>hi</jats:bold>";
         let html = "<b>hi</b>";
+        assert_eq!(to_html(jats).unwrap(), html);
+    }
+
+    #[test]
+    fn test_drop_title() {
+        let jats = "<jats:title>foo</jats:title>bar";
+        let html = "bar";
         assert_eq!(to_html(jats).unwrap(), html);
     }
 }
