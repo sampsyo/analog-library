@@ -113,9 +113,15 @@ impl Context {
 
     pub fn dump_cache(&self) -> Result<(), Error> {
         for entry in webcache::cache_scan(&self.db) {
-            let (_, time, json) = entry?;
-            let paper: crossref::Paper = serde_json::from_slice(json.as_ref())?;
-            println!("{} {} {}", time, &paper.doi, paper.title());
+            let (url, time, json) = entry?;
+            match serde_json::from_slice::<crossref::Paper>(json.as_ref()) {
+                Ok(paper) => println!("{} {} {}", time, &paper.doi, paper.title()),
+                Err(_) => println!(
+                    "{} deserialization error: {}",
+                    time,
+                    String::from_utf8_lossy(&url)
+                ),
+            }
         }
         Ok(())
     }
