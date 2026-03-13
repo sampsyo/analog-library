@@ -80,10 +80,12 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
             div.published {
                 @if paper.type_ == "journal-article" {
                     (paper.container_title)
-                    (", volume ")
-                    (paper.volume.as_deref().unwrap_or(""))
-                    (", issue ")
-                    (paper.issue.as_deref().unwrap_or(""))
+                    @if let Some(vol) = &paper.volume {
+                        (", volume ") (vol)
+                    }
+                    @if let Some(iss) = &paper.issue {
+                        (", issue ") (iss)
+                    }
                     @if let Some(page) = &paper.page {
                         (", pp. ")
                         (page)
