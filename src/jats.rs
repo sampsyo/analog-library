@@ -20,7 +20,7 @@ pub fn to_html(jats: &str) -> Result<String, Error> {
     loop {
         if ignore {
             if let Event::End(e) = reader.read_event()?
-                && e.name().as_ref() == b"jats:title"
+                && ignore_tag(e.name().as_ref())
             {
                 ignore = false;
             }
@@ -33,7 +33,7 @@ pub fn to_html(jats: &str) -> Result<String, Error> {
                     writer
                         .write_event(Event::Start(BytesStart::new(html_tag)))
                         .unwrap();
-                } else if e.name().as_ref() == b"jats:title" {
+                } else if ignore_tag(e.name().as_ref()) {
                     ignore = true;
                 } else {
                     return Err(Error::UnknownTag);
@@ -78,6 +78,11 @@ fn trans_tag(tag: &[u8]) -> Option<&'static str> {
     } else {
         None
     }
+}
+
+/// Check if we should ignore the entire contents of a given JATS tag.
+fn ignore_tag(tag: &[u8]) -> bool {
+    tag == b"jats:title"
 }
 
 #[cfg(test)]
