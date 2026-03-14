@@ -160,3 +160,16 @@ pub fn des_error_page(msg: String) -> Markup {
         },
     )
 }
+
+pub fn other_error_page(msg: String) -> Markup {
+    wrap(
+        "500 Internal Server Error",
+        html! {
+            h1 { "500 Internal Server Error" }
+            p {
+                ("Analog Library encountered an internal error:")
+            }
+            pre { (msg) }
+        },
+    )
+}

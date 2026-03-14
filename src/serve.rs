@@ -15,19 +15,17 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         dbg!(&self);
         match self {
-            Error::NotFound(doi) => {
-                (StatusCode::NOT_FOUND, view::not_found_page(&doi)).into_response()
-            }
+            Error::NotFound(doi) => (StatusCode::NOT_FOUND, view::not_found_page(&doi)),
             Error::Parse(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 view::des_error_page(err.to_string()),
-            )
-                .into_response(),
-            _ => {
-                let msg = self.to_string();
-                (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
-            }
+            ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                view::other_error_page(self.to_string()),
+            ),
         }
+        .into_response()
     }
 }
 
