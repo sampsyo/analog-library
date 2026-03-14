@@ -135,3 +135,18 @@ pub fn not_found_page(doi: &str) -> Markup {
         },
     )
 }
+
+pub fn des_error_page(msg: String) -> Markup {
+    wrap(
+        "500 Could Not Parse API Response",
+        html! {
+            h1 { "500 Could Not Parse API Response" }
+            p {
+                ("Analog Library could not parse the response from the ")
+                a href="https://www.crossref.org" { "Crossref" }
+                " API. Here is the deserialization error:"
+            }
+            pre { (msg) }
+        },
+    )
+}

@@ -18,6 +18,11 @@ impl IntoResponse for Error {
             Error::NotFound(doi) => {
                 (StatusCode::NOT_FOUND, view::not_found_page(&doi)).into_response()
             }
+            Error::Parse(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                view::des_error_page(err.to_string()),
+            )
+                .into_response(),
             _ => {
                 let msg = self.to_string();
                 (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
