@@ -2,10 +2,10 @@ use crate::core::{Context, Error};
 use crate::view;
 use axum::{
     Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::{
         StatusCode,
-        header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderValue},
+        header::{CONTENT_TYPE, HeaderMap, HeaderValue},
     },
     response::{IntoResponse, Response},
     routing::get,
@@ -38,14 +38,19 @@ fn json_resp(json: &[u8]) -> Response {
         .into_response()
 }
 
+#[derive(serde::Deserialize)]
+struct PaperQuery {
+    format: Option<String>,
+}
+
 async fn show_paper(
     State(ctx): State<Context>,
-    headers: HeaderMap,
     Path(doi): Path<String>,
+    query: Query<PaperQuery>,
 ) -> Result<impl IntoResponse, Error> {
     let paper_json = ctx.fetch_doi_json(&doi).await?;
-    match headers.get(ACCEPT).map(|x| x.as_bytes()) {
-        Some(b"application/json") => Ok(json_resp(paper_json.as_ref())),
+    match query.format.as_deref() {
+        Some("json") => Ok(json_resp(paper_json.as_ref())),
         _ => {
             let paper = serde_json::from_slice(paper_json.as_ref())?;
             Ok(ctx.render_paper(paper).await?.into_response())
