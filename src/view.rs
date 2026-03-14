@@ -147,6 +147,16 @@ pub fn des_error_page(msg: String) -> Markup {
                 " API. Here is the deserialization error:"
             }
             pre { (msg) }
+            p {
+                ("If you like, you can ")
+                a href="https://codeberg.org/samps/analog-library/issues" {
+                    ("file a bug")
+                }
+                (" about this DOI and we might be able to fix it. ")
+                ("To see the raw JSON response, append ")
+                code { ("?format=json") }
+                " to the URL."
+            }
         },
     )
 }
