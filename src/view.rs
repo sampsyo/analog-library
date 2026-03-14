@@ -119,3 +119,19 @@ pub fn home_page(host: &str) -> Markup {
 
     wrap("Analog Library Premium Edition™", PreEscaped(home))
 }
+
+pub fn not_found_page(doi: &str) -> Markup {
+    wrap(
+        "404 Not Found",
+        html! {
+            h1 { "404 Not Found" }
+            p {
+                ("Analog Library does not have data for the DOI ")
+                code { (doi) } (". ")
+                ("It uses the ")
+                a href="https://www.crossref.org" { "Crossref" }
+                (" database, so only DOIs present there can be rendered.")
+            }
+        },
+    )
+}

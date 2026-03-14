@@ -14,12 +14,15 @@ use axum::{
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         dbg!(&self);
-        let msg = self.to_string();
-        let code = match self {
-            Error::NotFound => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        (code, msg).into_response()
+        match self {
+            Error::NotFound(doi) => {
+                (StatusCode::NOT_FOUND, view::not_found_page(&doi)).into_response()
+            }
+            _ => {
+                let msg = self.to_string();
+                (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
+            }
+        }
     }
 }
 

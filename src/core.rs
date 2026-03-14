@@ -44,7 +44,7 @@ pub enum Error {
     #[error("could not parse API response")]
     Parse(#[from] serde_json::Error),
     #[error("no paper entry found for this DOI")]
-    NotFound,
+    NotFound(String),
 }
 
 #[derive(Clone)]
@@ -67,12 +67,12 @@ impl Default for Context {
 impl Context {
     pub async fn fetch_doi_json(&self, doi: &str) -> Result<sled::IVec, Error> {
         if !valid_doi(doi) {
-            return Err(Error::NotFound);
+            return Err(Error::NotFound(doi.to_string()));
         }
         let doi_url = format!("https://api.crossref.org/v1/works/{doi}/transform");
         webcache::fetch(&self.db, &self.client, &doi_url)
             .await?
-            .ok_or(Error::NotFound)
+            .ok_or(Error::NotFound(doi.to_string()))
     }
 
     pub async fn fetch_doi(&self, doi: &str) -> Result<crossref::Paper, Error> {
