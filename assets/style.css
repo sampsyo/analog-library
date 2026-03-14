@@ -74,6 +74,8 @@ nav {
   text-transform: uppercase;
   font-size: 80%;
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.5rem;
 
   .details {
     margin-right: auto;
@@ -95,7 +97,6 @@ nav {
     a:link,
     a:visited {
       display: inline-block;
-      margin-left: 1em;
       padding: 0.5em;
 
       background: var(--theme-color);
