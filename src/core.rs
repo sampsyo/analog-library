@@ -108,7 +108,7 @@ impl Context {
 
     pub async fn render_paper(&self, paper: crossref::Paper) -> Result<Markup, Error> {
         let abstract_ = self.get_abstract(&paper).await?;
-        Ok(view::paper_page(paper, abstract_))
+        Ok(view::paper(paper, abstract_))
     }
 
     pub fn dump_cache(&self) -> Result<(), Error> {

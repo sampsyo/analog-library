@@ -15,14 +15,14 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         dbg!(&self);
         match self {
-            Error::NotFound(doi) => (StatusCode::NOT_FOUND, view::doi_not_found_page(&doi)),
+            Error::NotFound(doi) => (StatusCode::NOT_FOUND, view::doi_not_found(&doi)),
             Error::Parse(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                view::des_error_page(err.to_string()),
+                view::des_error(err.to_string()),
             ),
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                view::other_error_page(self.to_string()),
+                view::other_error(self.to_string()),
             ),
         }
         .into_response()
@@ -66,14 +66,14 @@ async fn show_home(headers: HeaderMap) -> maud::Markup {
         Some(h) => h.to_str().unwrap_or("example.com"),
         None => "example.com",
     };
-    view::home_page(host)
+    view::home(host)
 }
 
 pub async fn serve(ctx: Context) {
     let app = Router::new()
         .route("/", get(show_home))
         .route("/doi/{*doi}", get(show_paper))
-        .fallback(async || view::route_not_found_page())
+        .fallback(async || view::route_not_found())
         .with_state(ctx);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8118").await.unwrap();

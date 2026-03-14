@@ -25,7 +25,7 @@ fn wrap(title: &str, main: Markup) -> Markup {
     }
 }
 
-pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
+pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
     let title = paper.title();
 
     // Try converting the abstract from JATS XML to HTML we can render. If this
@@ -107,7 +107,7 @@ pub fn paper_page(paper: Paper, abstract_: Option<String>) -> Markup {
     )
 }
 
-pub fn home_page(host: &str) -> Markup {
+pub fn home(host: &str) -> Markup {
     #[cfg(debug_assertions)]
     let home = ASSETS.read("home.html").expect("asset must exist").unwrap();
 
@@ -120,7 +120,7 @@ pub fn home_page(host: &str) -> Markup {
     wrap("Analog Library Premium Edition™", PreEscaped(home))
 }
 
-pub fn doi_not_found_page(doi: &str) -> Markup {
+pub fn doi_not_found(doi: &str) -> Markup {
     wrap(
         "404 Not Found",
         html! {
@@ -136,7 +136,7 @@ pub fn doi_not_found_page(doi: &str) -> Markup {
     )
 }
 
-pub fn route_not_found_page() -> Markup {
+pub fn route_not_found() -> Markup {
     wrap(
         "404 Not Found",
         html! {
@@ -150,7 +150,7 @@ pub fn route_not_found_page() -> Markup {
     )
 }
 
-pub fn des_error_page(msg: String) -> Markup {
+pub fn des_error(msg: String) -> Markup {
     wrap(
         "500 Could Not Parse API Response",
         html! {
@@ -175,7 +175,7 @@ pub fn des_error_page(msg: String) -> Markup {
     )
 }
 
-pub fn other_error_page(msg: String) -> Markup {
+pub fn other_error(msg: String) -> Markup {
     wrap(
         "500 Internal Server Error",
         html! {
