@@ -90,11 +90,15 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
                         (", pp. ")
                         (page)
                     }
+                    (". ")
+                    (paper.published)
+                    (".")
                 } @else if paper.type_ == "proceedings-article" {
                     ("In ")
                     (paper.event.as_deref().unwrap_or(""))
-                    (", ")
-                    (paper.published.year())
+                    (". ")
+                    (paper.published)
+                    (".")
                 }
             }
             span.label { "Abstract:" } " "

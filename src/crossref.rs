@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -140,5 +140,34 @@ impl Date {
 
     pub fn day(&self) -> Option<u32> {
         self.date_parts[0].get(2).cloned()
+    }
+}
+
+impl Display for Date {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.date_parts[0][..] {
+            [y, m, d] => write!(f, "{} {d}, {y}", month(m)),
+            [y, m] => write!(f, "{} {y}", month(m)),
+            [y] => write!(f, "{y}"),
+            _ => panic!("date should have 1, 2, or 3 parts"),
+        }
+    }
+}
+
+fn month(n: u32) -> &'static str {
+    match n {
+        1 => "January",
+        2 => "February",
+        3 => "March",
+        4 => "April",
+        5 => "May",
+        6 => "June",
+        7 => "July",
+        8 => "August",
+        9 => "September",
+        10 => "October",
+        11 => "November",
+        12 => "December",
+        _ => panic!("month out of range"),
     }
 }
