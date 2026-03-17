@@ -109,16 +109,31 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
     };
 
     let doi_url = format!("https://doi.org/{}", paper.doi);
+    let authors = join(paper.author.iter().map(|a| a.name()), ", ");
     let head = html! {
         meta property="og:title" content=(title);
         meta property="og:url" content=(doi_url);
         meta property="og:description" content="TK";
         meta property="og:type" content="article";
-        meta property="article:author" content="TK";
+        meta property="article:author" content=(authors);
         meta property="article:published_time" content="TK ISO date";
     };
 
     page(&title, main, head)
+}
+
+fn join(ss: impl Iterator<Item = String>, sep: &str) -> String {
+    let mut out = String::new();
+    let mut first = true;
+    for s in ss {
+        if first {
+            first = false;
+        } else {
+            out.push_str(sep);
+        }
+        out.push_str(&s);
+    }
+    out
 }
 
 pub fn home(host: &str) -> Markup {
