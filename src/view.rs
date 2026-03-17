@@ -116,7 +116,7 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
         meta property="og:description" content="TK";
         meta property="og:type" content="article";
         meta property="article:author" content=(authors);
-        meta property="article:published_time" content="TK ISO date";
+        meta property="article:published_time" content=(paper.published.iso());
     };
 
     page(&title, main, head)

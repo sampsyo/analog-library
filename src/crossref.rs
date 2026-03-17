@@ -141,6 +141,15 @@ impl Date {
     pub fn day(&self) -> Option<u32> {
         self.date_parts[0].get(2).cloned()
     }
+
+    pub fn iso(&self) -> String {
+        match self.date_parts[0][..] {
+            [y, m, d] => format!("{y:04}-{m:02}-{d:02}"),
+            [y, m] => format!("{y:04}-{m:02}"),
+            [y] => format!("{y:04}"),
+            _ => String::new(),
+        }
+    }
 }
 
 impl Display for Date {
