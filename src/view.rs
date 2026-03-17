@@ -4,7 +4,7 @@ use crate::crossref::Paper;
 use crate::jats;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
-fn wrap(title: &str, main: Markup) -> Markup {
+fn page(title: &str, main: Markup, head: Markup) -> Markup {
     #[cfg(debug_assertions)]
     let css = ASSETS.read("style.css").expect("asset must exist").unwrap();
 
@@ -19,6 +19,7 @@ fn wrap(title: &str, main: Markup) -> Markup {
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { (title) };
                 style { (PreEscaped(css)) };
+                (head);
             }
         }
         body { main { (main) } }
@@ -46,69 +47,68 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
         }
     };
 
-    wrap(
-        &title,
-        html! {
-            nav {
-                div.details {
-                    span.type {
-                        ( paper.human_type() )
-                    }
-                    span.doi {
-                        ( paper.doi )
-                    }
+    let main = html! {
+        nav {
+            div.details {
+                span.type {
+                    ( paper.human_type() )
                 }
-                div.links {
-                    @if let Some(url) = paper.resource_url() {
-                        a href=(url) { ( paper.domain().unwrap() ) }
-                    }
-                    @if let Some(url) = paper.pdf_url() {
-                        a href=(url) { "PDF" }
-                    }
+                span.doi {
+                    ( paper.doi )
                 }
             }
-            h1 { (title) };
-            span.label { "Authors:" } " "
-            div.authors {
-                span.author { (paper.author[0].name()) }
-                @for author in &paper.author[1..] {
-                    ", "
-                    span.author { (author.name()) }
+            div.links {
+                @if let Some(url) = paper.resource_url() {
+                    a href=(url) { ( paper.domain().unwrap() ) }
                 }
-            };
-            span.label { "Published:" } " "
-            div.published {
-                @if paper.type_ == "journal-article" {
-                    (paper.container_title)
-                    @if let Some(vol) = &paper.volume {
-                        (", volume ") (vol)
-                    }
-                    @if let Some(iss) = &paper.issue {
-                        (", issue ") (iss)
-                    }
-                    @if let Some(page) = &paper.page {
-                        (", pp. ")
-                        (page)
-                    }
-                    (". ")
-                    (paper.published)
-                    (".")
-                } @else if paper.type_ == "proceedings-article" {
-                    ("In ")
-                    (paper.event.as_deref().unwrap_or(""))
-                    (". ")
-                    (paper.published)
-                    (".")
+                @if let Some(url) = paper.pdf_url() {
+                    a href=(url) { "PDF" }
                 }
             }
-            span.label { "Abstract:" } " "
-            (abs)
-            span.label { "BibTeX:" } " "
-            pre.bibtex {
-                (bib::Entry(&paper))
+        }
+        h1 { (title) };
+        span.label { "Authors:" } " "
+        div.authors {
+            span.author { (paper.author[0].name()) }
+            @for author in &paper.author[1..] {
+                ", "
+                span.author { (author.name()) }
             }
-        },
-    )
+        };
+        span.label { "Published:" } " "
+        div.published {
+            @if paper.type_ == "journal-article" {
+                (paper.container_title)
+                @if let Some(vol) = &paper.volume {
+                    (", volume ") (vol)
+                }
+                @if let Some(iss) = &paper.issue {
+                    (", issue ") (iss)
+                }
+                @if let Some(page) = &paper.page {
+                    (", pp. ")
+                    (page)
+                }
+                (". ")
+                (paper.published)
+                (".")
+            } @else if paper.type_ == "proceedings-article" {
+                ("In ")
+                (paper.event.as_deref().unwrap_or(""))
+                (". ")
+                (paper.published)
+                (".")
+            }
+        }
+        span.label { "Abstract:" } " "
+        (abs)
+        span.label { "BibTeX:" } " "
+        pre.bibtex {
+            (bib::Entry(&paper))
+        }
+    };
+
+    page(&title, main, html! {})
 }
 
 pub fn home(host: &str) -> Markup {
@@ -121,11 +121,15 @@ pub fn home(host: &str) -> Markup {
     let home = home.replace("__HOST__", host);
     let home = home.replace("__VERSION__", env!("CARGO_PKG_VERSION"));
 
-    wrap("Analog Library Premium Edition™", PreEscaped(home))
+    page(
+        "Analog Library Premium Edition™",
+        PreEscaped(home),
+        html! {},
+    )
 }
 
 pub fn doi_not_found(doi: &str) -> Markup {
-    wrap(
+    page(
         "404 Not Found",
         html! {
             h1 { "404 Not Found" }
@@ -137,11 +141,12 @@ pub fn doi_not_found(doi: &str) -> Markup {
                 (" database, so only DOIs present there can be rendered.")
             }
         },
+        html! {},
     )
 }
 
 pub fn route_not_found() -> Markup {
-    wrap(
+    page(
         "404 Not Found",
         html! {
             h1 { "404 Not Found" }
@@ -151,11 +156,12 @@ pub fn route_not_found() -> Markup {
                 (" before the DOI in the URL.")
             }
         },
+        html! {},
     )
 }
 
 pub fn des_error(msg: String) -> Markup {
-    wrap(
+    page(
         "500 Could Not Parse API Response",
         html! {
             h1 { "500 Could Not Parse API Response" }
@@ -176,11 +182,12 @@ pub fn des_error(msg: String) -> Markup {
                 " to the URL."
             }
         },
+        html! {},
     )
 }
 
 pub fn other_error(msg: String) -> Markup {
-    wrap(
+    page(
         "500 Internal Server Error",
         html! {
             h1 { "500 Internal Server Error" }
@@ -189,5 +196,6 @@ pub fn other_error(msg: String) -> Markup {
             }
             pre { (msg) }
         },
+        html! {},
     )
 }
