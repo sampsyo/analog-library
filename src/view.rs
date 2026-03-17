@@ -108,7 +108,17 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
         }
     };
 
-    page(&title, main, html! {})
+    let doi_url = format!("https://doi.org/{}", paper.doi);
+    let head = html! {
+        meta property="og:title" content=(title);
+        meta property="og:url" content=(doi_url);
+        meta property="og:description" content="TK";
+        meta property="og:type" content="article";
+        meta property="article:author" content="TK";
+        meta property="article:published_time" content="TK ISO date";
+    };
+
+    page(&title, main, head)
 }
 
 pub fn home(host: &str) -> Markup {
