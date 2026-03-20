@@ -46,6 +46,11 @@ pub fn to_html(jats: &str) -> Result<String, Error> {
             Event::Text(e) => {
                 out_buf.extend_from_slice(e.as_ref());
             }
+            Event::GeneralRef(e) => {
+                out_buf.push(b'&');
+                out_buf.extend_from_slice(e.as_ref());
+                out_buf.push(b';');
+            }
             Event::Eof => break,
             _ => (),
         }
@@ -108,5 +113,11 @@ mod tests {
     fn test_drop_title() {
         let jats = "<jats:title>foo</jats:title>bar";
         assert_eq!(to_html(jats).unwrap(), "bar");
+    }
+
+    #[test]
+    fn test_entities() {
+        let jats = "&lt;br&gt;";
+        assert_eq!(to_html(jats).unwrap(), "&lt;br&gt;");
     }
 }
