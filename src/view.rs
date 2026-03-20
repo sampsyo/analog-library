@@ -32,9 +32,9 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
     // Try converting the abstract from JATS XML to HTML we can render. If this
     // fails, just pass through the XML as text.
     // TODO we should probably log the error.
-    let abs = match abstract_ {
+    let abs = match &abstract_ {
         Some(j) => {
-            let content = match jats::to_html(&j) {
+            let content = match jats::to_html(j) {
                 Ok(h) => html! { (PreEscaped(h)) },
                 Err(_) => html! { (j) },
             };
@@ -113,7 +113,9 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
     let head = html! {
         meta property="og:title" content=(title);
         meta property="og:url" content=(doi_url);
-        meta property="og:description" content="TK";
+        @if let Some(abs) = &abstract_ && let Ok(abs) = jats::to_text(abs) {
+            meta property="og:description" content=(abs);
+        }
         meta property="og:type" content="article";
         meta property="article:author" content=(authors);
         meta property="article:published_time" content=(paper.published.iso());

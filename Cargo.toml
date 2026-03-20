@@ -18,7 +18,7 @@ basset = "0.1.0"
 maud = { version = "*", features = ["axum"] }
 sled = "0.34"
 thiserror = "2"
-quick-xml = "0.39"
+quick-xml = { version = "0.39", features = ["escape-html"] }
 url = "2"
 mime = "0.3"
 pico-args = "0.5"
