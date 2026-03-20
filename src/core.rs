@@ -88,7 +88,7 @@ impl Context {
     /// abstract, it is often the case that other identical entries *do* have an
     /// abstract. So we first try the abstract we already have and, if it's missing,
     /// try all the identical entries to see if they have one we can use.
-    async fn get_abstract(&self, paper: &crossref::Paper) -> Result<Option<String>, Error> {
+    pub async fn get_abstract(&self, paper: &crossref::Paper) -> Result<Option<String>, Error> {
         match &paper.abstract_ {
             Some(abs) => Ok(Some(abs.to_string())),
             None => {

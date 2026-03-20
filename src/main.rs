@@ -18,6 +18,8 @@ enum MainError {
     Io(#[from] std::io::Error),
     #[error("{0}")]
     Core(#[from] core::Error),
+    #[error("could not decode JATS XML: {0}")]
+    Jats(#[from] jats::Error),
 }
 
 async fn run() -> Result<(), MainError> {
@@ -43,12 +45,21 @@ async fn run() -> Result<(), MainError> {
             let paper = ctx.fetch_doi(&doi).await?;
             println!("{}", bib::Entry(&paper));
         }
+        Some("abs") => {
+            let doi: String = args.free_from_str()?;
+            let paper = ctx.fetch_doi(&doi).await?;
+            let abs = ctx.get_abstract(&paper).await?;
+            if let Some(abs) = abs {
+                let abs = jats::to_text(&abs)?;
+                println!("{abs}");
+            }
+        }
         Some("cache") => {
             ctx.dump_cache()?;
         }
         Some(cmd) => {
             eprintln!("unknown command {cmd}");
-            eprintln!("available commands are: serve, json, html, bib, cache");
+            eprintln!("available commands are: serve, json, html, bib, abs, cache");
             std::process::exit(1);
         }
     }
