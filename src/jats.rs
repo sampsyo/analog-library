@@ -1,7 +1,6 @@
-use quick_xml::events::{BytesEnd, BytesStart, Event};
+use quick_xml::events::Event;
 use quick_xml::reader::Reader;
-use quick_xml::writer::Writer;
-use std::io::Cursor;
+use std::io::Write;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -14,7 +13,7 @@ pub enum Error {
 /// Translate JATS XML to HTML.
 pub fn to_html(jats: &str) -> Result<String, Error> {
     let mut reader = Reader::from_str(jats);
-    let mut writer = Writer::new(Cursor::new(Vec::new()));
+    let mut out_buf = Vec::new();
 
     let mut ignore = false;
     loop {
@@ -30,9 +29,7 @@ pub fn to_html(jats: &str) -> Result<String, Error> {
         match reader.read_event()? {
             Event::Start(e) => {
                 if let Some(html_tag) = trans_tag(e.name().as_ref()) {
-                    writer
-                        .write_event(Event::Start(BytesStart::new(html_tag)))
-                        .unwrap();
+                    write!(out_buf, "<{html_tag}>").unwrap();
                 } else if ignore_tag(e.name().as_ref()) {
                     ignore = true;
                 } else {
@@ -41,20 +38,20 @@ pub fn to_html(jats: &str) -> Result<String, Error> {
             }
             Event::End(e) => {
                 if let Some(html_tag) = trans_tag(e.name().as_ref()) {
-                    writer
-                        .write_event(Event::End(BytesEnd::new(html_tag)))
-                        .unwrap()
+                    write!(out_buf, "</{html_tag}>").unwrap();
                 } else {
                     return Err(Error::UnknownTag);
                 }
             }
+            Event::Text(e) => {
+                out_buf.extend_from_slice(e.as_ref());
+            }
             Event::Eof => break,
-            e => writer.write_event(e.borrow()).unwrap(),
+            _ => (),
         }
     }
 
-    let bytes = writer.into_inner().into_inner();
-    Ok(String::from_utf8(bytes).expect("output HTML must be UTF-8"))
+    Ok(String::from_utf8(out_buf).expect("output HTML must be UTF-8"))
 }
 
 /// Translate a JATS tag to an HTML tag.
