@@ -1,5 +1,5 @@
 use crate::bib;
-use crate::core::ASSETS;
+use crate::core::{ASSETS, join};
 use crate::crossref::Paper;
 use crate::jats;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
@@ -122,20 +122,6 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
     };
 
     page(&title, main, head)
-}
-
-fn join(ss: impl Iterator<Item = String>, sep: &str) -> String {
-    let mut out = String::new();
-    let mut first = true;
-    for s in ss {
-        if first {
-            first = false;
-        } else {
-            out.push_str(sep);
-        }
-        out.push_str(&s);
-    }
-    out
 }
 
 pub fn home(host: &str) -> Markup {

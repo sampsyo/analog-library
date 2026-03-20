@@ -1,3 +1,4 @@
+use crate::core::join;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
 use std::io::Write;
@@ -85,7 +86,17 @@ pub fn to_html(jats: &str) -> Result<String, Error> {
 
 /// Translate JATS XML to plain text.
 pub fn to_text(jats: &str) -> Result<String, Error> {
-    translate(jats, Format::Plain)
+    let text = translate(jats, Format::Plain)?;
+
+    // Normalize some whitespace. This is not a terribly efficient way to do it,
+    // but what are you going to do, you know? Life is short.
+    let text = join(text.split("\n").map(|line| line.trim()), "\n");
+    Ok(join(
+        text.trim()
+            .split("\n\n")
+            .map(|par| join(par.split("\n").map(|line| line.trim()), " ")),
+        "\n\n",
+    ))
 }
 
 /// Translate a JATS tag to an HTML tag.

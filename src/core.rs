@@ -37,6 +37,20 @@ fn valid_doi(doi: &str) -> bool {
     true
 }
 
+pub fn join<T: AsRef<str>>(ss: impl Iterator<Item = T>, sep: &str) -> String {
+    let mut out = String::new();
+    let mut first = true;
+    for s in ss {
+        if first {
+            first = false;
+        } else {
+            out.push_str(sep);
+        }
+        out.push_str(s.as_ref());
+    }
+    out
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("failed loading paper data")]
