@@ -89,28 +89,24 @@ mod tests {
     #[test]
     fn test_p() {
         let jats = "<jats:p>hi</jats:p>";
-        let html = "<p>hi</p>";
-        assert_eq!(to_html(jats).unwrap(), html);
+        assert_eq!(to_html(jats).unwrap(), "<p>hi</p>");
     }
 
     #[test]
     fn test_italic() {
         let jats = "<jats:italic>hi</jats:italic>";
-        let html = "<i>hi</i>";
-        assert_eq!(to_html(jats).unwrap(), html);
+        assert_eq!(to_html(jats).unwrap(), "<i>hi</i>");
     }
 
     #[test]
     fn test_bold() {
         let jats = "<jats:bold>hi</jats:bold>";
-        let html = "<b>hi</b>";
-        assert_eq!(to_html(jats).unwrap(), html);
+        assert_eq!(to_html(jats).unwrap(), "<b>hi</b>");
     }
 
     #[test]
     fn test_drop_title() {
         let jats = "<jats:title>foo</jats:title>bar";
-        let html = "bar";
-        assert_eq!(to_html(jats).unwrap(), html);
+        assert_eq!(to_html(jats).unwrap(), "bar");
     }
 }
