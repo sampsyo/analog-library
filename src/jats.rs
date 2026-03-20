@@ -64,10 +64,11 @@ fn translate(jats: &str, fmt: Format) -> Result<String, Error> {
                     out_buf.extend_from_slice(e.as_ref());
                     out_buf.push(b';');
                 }
-                Format::Plain => match e.resolve_char_ref().unwrap() {
-                    Some(c) => write!(out_buf, "{c}").unwrap(),
-                    None => (),
-                },
+                Format::Plain => {
+                    if let Some(c) = e.resolve_char_ref().unwrap() {
+                        write!(out_buf, "{c}").unwrap();
+                    }
+                }
             },
             Event::Eof => break,
             _ => (),
