@@ -69,9 +69,27 @@ async fn show_home(headers: HeaderMap) -> maud::Markup {
     view::home(host)
 }
 
+async fn show_bookmarklet(headers: HeaderMap) -> String {
+    let host = match headers.get("Host") {
+        Some(h) => h.to_str().unwrap_or("example.com"),
+        None => "example.com",
+    };
+    view::bookmarklet(host)
+}
+
+async fn show_userscript(headers: HeaderMap) -> String {
+    let host = match headers.get("Host") {
+        Some(h) => h.to_str().unwrap_or("example.com"),
+        None => "example.com",
+    };
+    view::userscript(host)
+}
+
 pub async fn serve(ctx: Context) {
     let app = Router::new()
         .route("/", get(show_home))
+        .route("/bookmarklet.js", get(show_bookmarklet))
+        .route("/userscript.js", get(show_userscript))
         .route("/doi/{*doi}", get(show_paper))
         .fallback(async || view::route_not_found())
         .with_state(ctx);

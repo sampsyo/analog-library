@@ -141,6 +141,26 @@ pub fn home(host: &str) -> Markup {
     )
 }
 
+pub fn bookmarklet(host: &str) -> String {
+    #[cfg(debug_assertions)]
+    let script = ASSETS.read("bookmarklet.js").expect("asset must exist").unwrap();
+
+    #[cfg(not(debug_assertions))]
+    let script = ASSETS.get("bookmarklet.js").expect("asset must exist");
+
+    script.replace("__HOST__", host)
+}
+
+pub fn userscript(host: &str) -> String {
+    #[cfg(debug_assertions)]
+    let script = ASSETS.read("userscript.js").expect("asset must exist").unwrap();
+
+    #[cfg(not(debug_assertions))]
+    let script = ASSETS.get("userscript.js").expect("asset must exist");
+
+    script.replace("__HOST__", host)
+}
+
 pub fn doi_not_found(doi: &str) -> Markup {
     page(
         "404 Not Found",

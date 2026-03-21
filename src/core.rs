@@ -2,7 +2,7 @@ use crate::{crossref, view, webcache};
 use basset::assets;
 use maud::Markup;
 
-assets!(ASSETS, "assets", ["style.css", "home.html"]);
+assets!(ASSETS, "assets", ["style.css", "home.html", "bookmarklet.js", "userscript.js"]);
 
 fn user_agent() -> String {
     let base = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
