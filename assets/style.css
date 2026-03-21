@@ -146,6 +146,16 @@ pre.bibtex {
   white-space: pre-wrap;
 }
 
+button {
+  color: inherit;
+  background-color: inherit;
+  border: 0;
+}
+
+button:active {
+  color: white;
+}
+
 .version {
   color: var(--faded-color);
   display: inline-block;

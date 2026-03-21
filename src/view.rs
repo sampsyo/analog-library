@@ -102,7 +102,11 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
         }
         span.label { "Abstract:" } " "
         (abs)
-        span.label { "BibTeX:" } " "
+        span.label {
+            "BibTeX:"
+            button onclick="navigator.clipboard.writeText(document.querySelector('.bibtex').innerText)" { "(click here to copy)" }
+        } " "
+        
         pre.bibtex {
             (bib::Entry(&paper))
         }
