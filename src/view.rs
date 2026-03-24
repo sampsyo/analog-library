@@ -4,6 +4,8 @@ use crate::crossref::Paper;
 use crate::jats;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
+const COPY_JS: &str = "navigator.clipboard.writeText(document.querySelector('.bibtex').innerText)";
+
 fn page(title: &str, main: Markup, head: Markup) -> Markup {
     #[cfg(debug_assertions)]
     let css = ASSETS.read("style.css").expect("asset must exist").unwrap();
@@ -103,10 +105,9 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
         span.label { "Abstract:" } " "
         (abs)
         span.label {
+            button.copy onclick=(COPY_JS) title="copy to clipboard" { (PreEscaped("&#x29C9;")) }
             "BibTeX:"
-            button onclick="navigator.clipboard.writeText(document.querySelector('.bibtex').innerText)" { "(click here to copy)" }
         } " "
-        
         pre.bibtex {
             (bib::Entry(&paper))
         }
