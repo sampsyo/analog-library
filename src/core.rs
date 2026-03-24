@@ -2,7 +2,14 @@ use crate::{crossref, view, webcache};
 use basset::assets;
 use maud::Markup;
 
-assets!(ASSETS, "assets", ["style.css", "home.html", "bookmarklet.js", "userscript.js"]);
+// Load or embed static assets. The `RSRC` array contains the files that we will
+// also serve under the `/rsrc/` directory.
+assets!(
+    ASSETS,
+    "assets",
+    ["style.css", "home.html", "bookmarklet.js", "userscript.js"]
+);
+pub const RSRC: &[&str] = &["bookmarklet.js", "userscript.js"];
 
 fn user_agent() -> String {
     let base = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));

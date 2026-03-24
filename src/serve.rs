@@ -1,4 +1,4 @@
-use crate::core::{Context, Error};
+use crate::core::{Context, Error, RSRC};
 use crate::view;
 use axum::{
     Router,
@@ -61,35 +61,31 @@ async fn show_paper(
     }
 }
 
+fn get_host(headers: &HeaderMap) -> &str {
+    match headers.get("Host") {
+        Some(h) => h.to_str().unwrap_or("example.com"),
+        None => "example.com",
+    }
+}
+
 async fn show_home(headers: HeaderMap) -> maud::Markup {
-    let host = match headers.get("Host") {
-        Some(h) => h.to_str().unwrap_or("example.com"),
-        None => "example.com",
-    };
-    view::home(host)
+    view::home(get_host(&headers))
 }
 
-async fn show_bookmarklet(headers: HeaderMap) -> String {
-    let host = match headers.get("Host") {
-        Some(h) => h.to_str().unwrap_or("example.com"),
-        None => "example.com",
-    };
-    view::bookmarklet(host)
-}
-
-async fn show_userscript(headers: HeaderMap) -> String {
-    let host = match headers.get("Host") {
-        Some(h) => h.to_str().unwrap_or("example.com"),
-        None => "example.com",
-    };
-    view::userscript(host)
+async fn send_rsrc(headers: HeaderMap, Path(filename): Path<String>) -> Response {
+    let filename = filename.as_ref();
+    if RSRC.contains(&filename) {
+        // TODO set MIME type
+        view::asset(filename, get_host(&headers)).into_response()
+    } else {
+        view::route_not_found().into_response()
+    }
 }
 
 pub async fn serve(ctx: Context) {
     let app = Router::new()
         .route("/", get(show_home))
-        .route("/bookmarklet.js", get(show_bookmarklet))
-        .route("/userscript.js", get(show_userscript))
+        .route("/rsrc/{filename}", get(send_rsrc))
         .route("/doi/{*doi}", get(show_paper))
         .fallback(async || view::route_not_found())
         .with_state(ctx);

@@ -141,22 +141,14 @@ pub fn home(host: &str) -> Markup {
     )
 }
 
-pub fn bookmarklet(host: &str) -> String {
+/// Serve a static(ish) asset from our resources. Replace the __HOST__ token in
+/// this asset with the server's host.
+pub fn asset(filename: &str, host: &str) -> String {
     #[cfg(debug_assertions)]
-    let script = ASSETS.read("bookmarklet.js").expect("asset must exist").unwrap();
+    let script = ASSETS.read(filename).expect("asset must exist").unwrap();
 
     #[cfg(not(debug_assertions))]
-    let script = ASSETS.get("bookmarklet.js").expect("asset must exist");
-
-    script.replace("__HOST__", host)
-}
-
-pub fn userscript(host: &str) -> String {
-    #[cfg(debug_assertions)]
-    let script = ASSETS.read("userscript.js").expect("asset must exist").unwrap();
-
-    #[cfg(not(debug_assertions))]
-    let script = ASSETS.get("userscript.js").expect("asset must exist");
+    let script = ASSETS.get(filename).expect("asset must exist");
 
     script.replace("__HOST__", host)
 }
