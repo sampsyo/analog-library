@@ -5,6 +5,8 @@ use crate::jats;
 use maud::{DOCTYPE, Escaper, Markup, PreEscaped, html};
 use std::fmt::Write;
 
+const COPY_JS: &str = "navigator.clipboard.writeText(document.querySelector('.bibtex').innerText)";
+
 fn page(title: &str, main: Markup, head: Markup) -> Markup {
     #[cfg(debug_assertions)]
     let css = ASSETS.read("style.css").expect("asset must exist").unwrap();
@@ -103,7 +105,10 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
         }
         span.label { "Abstract:" } " "
         (abs)
-        span.label { "BibTeX:" } " "
+        span.label {
+            button.copy onclick=(COPY_JS) title="copy to clipboard" { (PreEscaped("&#x29C9;")) }
+            "BibTeX:"
+        } " "
         pre.bibtex {
             (bib::Entry(&paper))
         }
