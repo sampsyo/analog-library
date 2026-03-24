@@ -2,7 +2,8 @@ use crate::bib;
 use crate::core::{ASSETS, join};
 use crate::crossref::Paper;
 use crate::jats;
-use maud::{DOCTYPE, Markup, PreEscaped, html};
+use maud::{DOCTYPE, Escaper, Markup, PreEscaped, html};
+use std::fmt::Write;
 
 fn page(title: &str, main: Markup, head: Markup) -> Markup {
     #[cfg(debug_assertions)]
@@ -133,6 +134,15 @@ pub fn home(host: &str) -> Markup {
 
     let home = home.replace("__HOST__", host);
     let home = home.replace("__VERSION__", env!("CARGO_PKG_VERSION"));
+
+    // Escape the JavaScript source for the bookmarklet.
+    // TODO It would be nice to do this once at startup instead of on every render...
+    let bm_src = asset("bookmarklet.js", host);
+    let bm_src = bm_src.replace("\n", " ");
+    let bm_src = bm_src.trim();
+    let mut bm_escaped = String::new();
+    Escaper::new(&mut bm_escaped).write_str(&bm_src).unwrap();
+    let home = home.replace("__BOOKMARKLET__", &bm_escaped);
 
     page(
         "Analog Library Premium Edition™",
