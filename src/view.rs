@@ -146,7 +146,7 @@ pub fn home(host: &str) -> Markup {
     let bm_src = bm_src.replace("\n", " ");
     let bm_src = bm_src.trim();
     let mut bm_escaped = String::new();
-    Escaper::new(&mut bm_escaped).write_str(&bm_src).unwrap();
+    Escaper::new(&mut bm_escaped).write_str(bm_src).unwrap();
     let home = home.replace("__BOOKMARKLET__", &bm_escaped);
 
     page(
