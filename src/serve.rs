@@ -5,7 +5,7 @@ use axum::{
     extract::{Path, Query, State},
     http::{
         StatusCode,
-        header::{CONTENT_TYPE, HeaderMap, HeaderValue},
+        header::{self, CONTENT_TYPE, HeaderMap, HeaderValue},
     },
     response::{IntoResponse, Response},
     routing::get,
@@ -73,12 +73,17 @@ async fn show_home(headers: HeaderMap) -> maud::Markup {
 }
 
 async fn send_rsrc(headers: HeaderMap, Path(filename): Path<String>) -> Response {
-    let filename = filename.as_ref();
-    if RSRC.contains(&filename) {
-        // TODO set MIME type
-        view::asset(filename, get_host(&headers)).into_response()
-    } else {
-        view::route_not_found().into_response()
+    let filename = filename.as_str();
+    match RSRC.iter().find(|(f, _)| *f == filename) {
+        Some((_, mime_type)) => {
+            let body = view::asset(filename, get_host(&headers));
+            let headers = [(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static(mime_type.as_ref()),
+            )];
+            (headers, body).into_response()
+        }
+        None => view::route_not_found().into_response(),
     }
 }
 

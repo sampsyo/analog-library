@@ -9,7 +9,10 @@ assets!(
     "assets",
     ["style.css", "home.html", "bookmarklet.js", "userscript.js"]
 );
-pub const RSRC: &[&str] = &["bookmarklet.js", "userscript.js"];
+pub const RSRC: &[(&str, mime::Mime)] = &[
+    ("bookmarklet.js", mime::APPLICATION_JAVASCRIPT),
+    ("userscript.js", mime::APPLICATION_JAVASCRIPT),
+];
 
 fn user_agent() -> String {
     let base = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
