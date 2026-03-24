@@ -168,6 +168,19 @@ pre.bibtex {
   background-clip: text;
 }
 
+a.bookmarklet {
+  display: inline-block;
+  background: var(--theme-color);
+  color: white;
+  border-radius: 3px;
+  text-decoration: none;
+  font-size: 90%;
+  font-weight: bold;
+  text-shadow: 0px 0px 2px black;
+  box-shadow: 1px 1px 2px #999;
+  padding: 1px 5px;
+}
+
 @media (prefers-color-scheme: dark) {
   .edition {
     background-image: linear-gradient(
