@@ -14,12 +14,26 @@
   For example, maybe you&rsquo;d like to learn about
   <a href="/doi/10.1145/237090.237140">the case for multicores</a>?
 </p>
-<p>
-  You can automatically redirect here by installing
-  <a href="/rsrc/userscript.js">a userscript</a>. Or, drag this bookmarklet to
-  your browser&rsquo;s &ldquo;favorites&rdquo; bar for a one-click redirect:
-  <a class="bookmarklet" href="javascript:__BOOKMARKLET__">analogify</a>
-</p>
+<p>Here are some ways to use Analog Library automatically:</p>
+<ul>
+  <li>
+    <strong>Bookmarklet.</strong> Drag this bookmarklet
+    <a class="bookmarklet" href="javascript:__BOOKMARKLET__">analogify</a> to
+    your browser&rsquo;s &ldquo;favorites&rdquo; bar for a one-click redirect.
+  </li>
+  <li>
+    <strong>Userscript.</strong> Install
+    <a href="/rsrc/userscript.js">this userscript</a> using a browser like
+    Tampermonkey for zero-click redirects.
+  </li>
+  <li>
+    <strong>Kagi redirect.</strong> If you use
+    <a href="https://kagi.com">Kagi</a> as your search engine, add this rule to
+    <a href="https://kagi.com/settings/redirects">your redirects</a> to rewrite
+    result URLs to point to Analog Library:
+    <code>^https://dl.acm.org/doi/(.*)|https://__HOST__/doi/$1</code>
+  </li>
+</ul>
 <p>
   Analog Library <span class="edition">Premium Edition&trade;</span> is by
   <a href="https://www.cs.cornell.edu/~asampson/">Adrian Sampson</a>. Check out
