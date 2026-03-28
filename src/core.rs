@@ -162,7 +162,11 @@ impl Context {
                 // Next, try the Semantic Scholar API.
                 // TODO Again, don't abort if this is not found.
                 let ss_paper = self.fetch_doi_ss(&paper.doi).await?;
-                Ok(Abstract::Text(ss_paper.abstract_))
+                if let Some(abstract_) = ss_paper.abstract_ {
+                    return Ok(Abstract::Text(abstract_));
+                }
+
+                Ok(Abstract::Missing)
             }
         }
     }

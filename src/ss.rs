@@ -11,7 +11,7 @@ pub struct Paper {
     pub title: String,
     pub authors: Vec<Author>,
     #[serde(rename = "abstract")]
-    pub abstract_: String,
+    pub abstract_: Option<String>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
