@@ -1,4 +1,4 @@
-use crate::{crossref, view, webcache};
+use crate::{crossref, ss, view, webcache};
 use basset::assets;
 use maud::Markup;
 
@@ -89,11 +89,12 @@ impl Default for Context {
 }
 
 impl Context {
+    // TODO Lots of duplicated code here.
     pub async fn fetch_doi_json(&self, doi: &str) -> Result<sled::IVec, Error> {
         if !valid_doi(doi) {
             return Err(Error::NotFound(doi.to_string()));
         }
-        let doi_url = format!("https://api.crossref.org/v1/works/{doi}/transform");
+        let doi_url = crossref::paper_url(doi);
         webcache::fetch(&self.db, &self.client, &doi_url)
             .await?
             .ok_or(Error::NotFound(doi.to_string()))
@@ -105,27 +106,43 @@ impl Context {
         Ok(paper)
     }
 
-    /// Find an abstract for this paper.
-    ///
-    /// Some papers in the Crossref database have several "identical" entries, with
-    /// different DOIs and different sets of metadata. When a paper is missing an
-    /// abstract, it is often the case that other identical entries *do* have an
-    /// abstract. So we first try the abstract we already have and, if it's missing,
-    /// try all the identical entries to see if they have one we can use.
+    pub async fn fetch_doi_ss_json(&self, doi: &str) -> Result<sled::IVec, Error> {
+        if !valid_doi(doi) {
+            return Err(Error::NotFound(doi.to_string()));
+        }
+        let doi_url = ss::paper_url(doi);
+        webcache::fetch(&self.db, &self.client, &doi_url)
+            .await?
+            .ok_or(Error::NotFound(doi.to_string()))
+    }
+
+    pub async fn fetch_doi_ss(&self, doi: &str) -> Result<ss::Paper, Error> {
+        let json = self.fetch_doi_ss_json(doi).await?;
+        let paper = serde_json::from_slice(json.as_ref())?;
+        Ok(paper)
+    }
+
+    /// Find an abstract for this paper, possibly by making additional API requests.
     pub async fn get_abstract(&self, paper: &crossref::Paper) -> Result<Option<String>, Error> {
         match &paper.abstract_ {
             Some(abs) => Ok(Some(abs.to_string())),
             None => {
-                let mut out = None;
+                // Some papers in the Crossref database have several "identical"
+                // entries, with different DOIs and different sets of metadata.
+                // When a paper is missing an abstract, it is often the case
+                // that other identical entries *do* have an abstract.
                 for other_doi in paper.identical_dois() {
                     // TODO Maybe try to suppress "not found" errors when fetching other_paper?
                     let other_paper = self.fetch_doi(&other_doi).await?;
                     if let Some(abstract_) = other_paper.abstract_ {
-                        out = Some(abstract_.to_string());
-                        break;
+                        return Ok(Some(abstract_.to_string()));
                     }
                 }
-                Ok(out)
+
+                // Next, try the Semantic Scholar API.
+                // TODO Again, don't abort if this is not found.
+                let ss_paper = self.fetch_doi_ss(&paper.doi).await?;
+                Ok(Some(ss_paper.abstract_))
             }
         }
     }

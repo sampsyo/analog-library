@@ -3,6 +3,7 @@ mod core;
 mod crossref;
 mod jats;
 mod serve;
+mod ss;
 mod view;
 mod webcache;
 

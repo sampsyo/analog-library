@@ -1,4 +1,10 @@
+//! Bindings for the Semantic Scholar API.
+
 use std::{collections::HashMap, fmt::Display};
+
+pub fn paper_url(doi: &str) -> String {
+    format!("https://api.crossref.org/v1/works/{doi}/transform")
+}
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
