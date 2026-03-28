@@ -1,5 +1,5 @@
 use crate::bib;
-use crate::core::{ASSETS, join};
+use crate::core::{ASSETS, Abstract, join};
 use crate::crossref::{Paper, domain};
 use crate::jats;
 use maud::{DOCTYPE, Escaper, Markup, PreEscaped, html};
@@ -29,23 +29,24 @@ fn page(title: &str, main: Markup, head: Markup) -> Markup {
     }
 }
 
-pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
+pub fn paper(paper: Paper, abstract_: Abstract) -> Markup {
     let title = paper.title();
 
     // Try converting the abstract from JATS XML to HTML we can render. If this
     // fails, just pass through the XML as text.
     // TODO we should probably log the error.
     let abs = match &abstract_ {
-        Some(j) => {
+        Abstract::Jats(j) => {
             let content = match jats::to_html(j) {
                 Ok(h) => html! { (PreEscaped(h)) },
                 Err(_) => html! { (j) },
             };
-            html! {
-                div.abstract { (content) }
-            }
+            html! { div.abstract { (content) } }
         }
-        None => {
+        Abstract::Text(t) => {
+            html! { div.abstract { (t) } }
+        }
+        Abstract::Missing => {
             html! { div.abstract.missing { "Data missing." } }
         }
     };
@@ -119,7 +120,7 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
     let head = html! {
         meta property="og:title" content=(title);
         meta property="og:url" content=(doi_url);
-        @if let Some(abs) = &abstract_ && let Ok(abs) = jats::to_text(abs) {
+        @if let Some(abs) = abstract_.text() {
             meta property="og:description" content=(abs);
         }
         meta property="og:type" content="article";

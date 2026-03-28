@@ -50,10 +50,10 @@ async fn run() -> Result<(), MainError> {
             let doi: String = args.free_from_str()?;
             let paper = ctx.fetch_doi(&doi).await?;
             let abs = ctx.get_abstract(&paper).await?;
-            if let Some(abs) = abs {
-                let abs = jats::to_text(&abs)?;
-                println!("{abs}");
-            }
+            match abs.text() {
+                Some(text) => println!("{text}"),
+                None => println!("No abstract found."),
+            };
         }
         Some("cache") => {
             ctx.dump_cache()?;

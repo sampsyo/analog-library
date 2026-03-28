@@ -1,4 +1,4 @@
-use crate::{crossref, ss, view, webcache};
+use crate::{crossref, jats, ss, view, webcache};
 use basset::assets;
 use maud::Markup;
 
@@ -59,6 +59,26 @@ pub fn join<T: AsRef<str>>(ss: impl Iterator<Item = T>, sep: &str) -> String {
         out.push_str(s.as_ref());
     }
     out
+}
+
+/// An abstract that is either encoded in JATS XML, as plain text, or missing altogether.
+pub enum Abstract {
+    Jats(String),
+    Text(String),
+    Missing,
+}
+
+impl Abstract {
+    pub fn text(self) -> Option<String> {
+        match self {
+            Abstract::Jats(j) => match jats::to_text(&j) {
+                Ok(t) => Some(t),
+                Err(_) => Some(j),
+            },
+            Abstract::Text(t) => Some(t),
+            Abstract::Missing => None,
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -123,9 +143,9 @@ impl Context {
     }
 
     /// Find an abstract for this paper, possibly by making additional API requests.
-    pub async fn get_abstract(&self, paper: &crossref::Paper) -> Result<Option<String>, Error> {
+    pub async fn get_abstract(&self, paper: &crossref::Paper) -> Result<Abstract, Error> {
         match &paper.abstract_ {
-            Some(abs) => Ok(Some(abs.to_string())),
+            Some(abs) => Ok(Abstract::Jats(abs.to_string())),
             None => {
                 // Some papers in the Crossref database have several "identical"
                 // entries, with different DOIs and different sets of metadata.
@@ -135,14 +155,14 @@ impl Context {
                     // TODO Maybe try to suppress "not found" errors when fetching other_paper?
                     let other_paper = self.fetch_doi(&other_doi).await?;
                     if let Some(abstract_) = other_paper.abstract_ {
-                        return Ok(Some(abstract_.to_string()));
+                        return Ok(Abstract::Jats(abstract_.to_string()));
                     }
                 }
 
                 // Next, try the Semantic Scholar API.
                 // TODO Again, don't abort if this is not found.
                 let ss_paper = self.fetch_doi_ss(&paper.doi).await?;
-                Ok(Some(ss_paper.abstract_))
+                Ok(Abstract::Text(ss_paper.abstract_))
             }
         }
     }
