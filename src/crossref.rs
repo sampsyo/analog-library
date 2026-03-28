@@ -22,6 +22,7 @@ pub struct Paper {
     pub doi: String,
 
     pub container_title: String,
+    pub proceedings_subject: Option<String>,
     pub page: Option<String>,
     pub volume: Option<String>,
     pub issue: Option<String>,
@@ -116,6 +117,23 @@ impl Paper {
 
     pub fn human_type(&self) -> String {
         self.type_.replace("-", " ")
+    }
+
+    /// Assuming this is an article in some proceedings, guess a good name for
+    /// the conference.
+    pub fn event_title(&self) -> Option<&str> {
+        if self.proceedings_subject.is_some() {
+            // When the `proceedings-subject` field is present, then both it and
+            // `event` seem to hold different fragments of the event name. Fall
+            // back to the more generic container name.
+            Some(&self.container_title)
+        } else if let Some(s) = &self.event {
+            // Otherwise, the event field usually has a friendlier name for the
+            // conference than the generic container.
+            Some(s)
+        } else {
+            None
+        }
     }
 }
 

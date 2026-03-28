@@ -97,7 +97,7 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
                 (".")
             } @else if paper.type_ == "proceedings-article" {
                 ("In ")
-                (paper.event.as_deref().unwrap_or(""))
+                (paper.event_title().unwrap_or("Unknown Event"))
                 (". ")
                 (paper.published)
                 (".")

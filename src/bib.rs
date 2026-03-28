@@ -53,7 +53,7 @@ impl<'a> Display for Entry<'a> {
                 write_pair_opt(f, "day", self.0.published.day())?;
             }
             Type::InProceedings => {
-                write_str_opt(f, "booktitle", self.0.event.as_deref())?;
+                write_str_opt(f, "booktitle", self.0.event_title())?;
                 write_pair(f, "year", self.0.published.year())?;
             }
             _ => {
