@@ -148,14 +148,16 @@ nav {
     border: 0;
     margin: 0;
     padding: 0 5px;
-
-    &:active {
-      background: var(--faded-color);
-      color: white;
-    }
+    cursor: pointer;
 
     &:hover {
       color: var(--text-color);
+      background: var(--mid-color);
+    }
+
+    &:active {
+      background: var(--text-color);
+      color: var(--background-color);
     }
   }
 }
