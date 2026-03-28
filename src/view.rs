@@ -1,6 +1,6 @@
 use crate::bib;
 use crate::core::{ASSETS, join};
-use crate::crossref::Paper;
+use crate::crossref::{Paper, domain};
 use crate::jats;
 use maud::{DOCTYPE, Escaper, Markup, PreEscaped, html};
 use std::fmt::Write;
@@ -61,8 +61,8 @@ pub fn paper(paper: Paper, abstract_: Option<String>) -> Markup {
                 }
             }
             div.links {
-                @if let Some(url) = paper.resource_url() {
-                    a href=(url) { ( paper.domain().unwrap() ) }
+                @if let Some(url) = paper.link_url() {
+                    a href=(url) { ( domain(&url).unwrap() ) }
                 }
                 @if let Some(url) = paper.pdf_url() {
                     a href=(url) { "PDF" }

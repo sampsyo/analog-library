@@ -88,32 +88,29 @@ impl Paper {
         self.resource.get("primary").map(|r| r.url.as_ref())
     }
 
-    pub fn domain(&self) -> Option<String> {
-        if let Some(url) = self.resource_url()
-            && let Ok(url) = url::Url::parse(url)
-            && let Some(url::Host::Domain(dom)) = url.host()
-        {
-            Some(
-                match dom.strip_prefix("www.") {
-                    Some(s) => s,
-                    None => dom,
-                }
-                .to_string(),
-            )
+    pub fn is_acm(&self) -> bool {
+        if let Some(url) = self.resource_url() {
+            matches!(domain(url), Some(d) if d == "dl.acm.org" || d == "portal.acm.org")
         } else {
-            None
+            false
         }
     }
 
-    pub fn is_acm(&self) -> bool {
-        matches!(self.domain(), Some(d) if d == "dl.acm.org")
-    }
-
+    /// Get a direct link to the paper PDF, if one is known.
     pub fn pdf_url(&self) -> Option<String> {
         if self.is_acm() {
             Some(format!("https://dl.acm.org/doi/pdf/{}", self.doi))
         } else {
             None
+        }
+    }
+
+    /// Get a link to a publisher page about the paper, if we have one.
+    pub fn link_url(&self) -> Option<String> {
+        if self.is_acm() {
+            Some(format!("https://dl.acm.org/doi/{}", self.doi))
+        } else {
+            self.resource_url().map(str::to_string)
         }
     }
 
@@ -180,4 +177,20 @@ const MONTHS: [&str; 12] = [
 
 fn month(n: u32) -> &'static str {
     MONTHS.get(n as usize).copied().unwrap_or("?")
+}
+
+pub fn domain(url: &str) -> Option<String> {
+    if let Ok(url) = url::Url::parse(url)
+        && let Some(url::Host::Domain(dom)) = url.host()
+    {
+        Some(
+            match dom.strip_prefix("www.") {
+                Some(s) => s,
+                None => dom,
+            }
+            .to_string(),
+        )
+    } else {
+        None
+    }
 }
