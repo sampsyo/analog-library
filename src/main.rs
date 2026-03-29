@@ -11,6 +11,8 @@ use core::Context;
 use std::io::Write;
 use std::process::ExitCode;
 
+use crate::core::Source;
+
 #[derive(Debug, thiserror::Error)]
 enum MainError {
     #[error("could not parse arguments: {0}")]
@@ -32,23 +34,23 @@ async fn run() -> Result<(), MainError> {
         }
         Some("json") => {
             let doi: String = args.free_from_str()?;
-            let json = ctx.fetch_doi_json(&doi).await?;
+            let json = ctx.fetch_doi(&doi, Source::Crossref).await?;
             std::io::stdout().write_all(json.as_ref())?;
         }
         Some("html") => {
             let doi: String = args.free_from_str()?;
-            let paper = ctx.fetch_doi(&doi).await?;
+            let paper = ctx.crossref_paper(&doi).await?;
             let html = ctx.render_paper(paper).await?;
             println!("{}", html.into_string());
         }
         Some("bib") => {
             let doi: String = args.free_from_str()?;
-            let paper = ctx.fetch_doi(&doi).await?;
+            let paper = ctx.crossref_paper(&doi).await?;
             println!("{}", bib::Entry(&paper));
         }
         Some("abs") => {
             let doi: String = args.free_from_str()?;
-            let paper = ctx.fetch_doi(&doi).await?;
+            let paper = ctx.crossref_paper(&doi).await?;
             let abs = ctx.get_abstract(&paper).await?;
             match abs.text() {
                 Some(text) => println!("{text}"),

@@ -1,4 +1,4 @@
-use crate::core::{Context, Error, RSRC};
+use crate::core::{Context, Error, RSRC, Source};
 use crate::view;
 use axum::{
     Router,
@@ -51,7 +51,7 @@ async fn show_paper(
     Path(doi): Path<String>,
     query: Query<PaperQuery>,
 ) -> Result<impl IntoResponse, Error> {
-    let paper_json = ctx.fetch_doi_json(&doi).await?;
+    let paper_json = ctx.fetch_doi(&doi, Source::Crossref).await?;
     match query.format.as_deref() {
         Some("json") => Ok(json_resp(paper_json.as_ref())),
         _ => {

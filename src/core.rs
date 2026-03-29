@@ -81,6 +81,12 @@ impl Abstract {
     }
 }
 
+/// The data sources for DOI data.
+pub enum Source {
+    Crossref,
+    SemanticScholar,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("failed loading paper data")]
@@ -109,35 +115,30 @@ impl Default for Context {
 }
 
 impl Context {
-    // TODO Lots of duplicated code here.
-    pub async fn fetch_doi_json(&self, doi: &str) -> Result<sled::IVec, Error> {
+    // Make an API request for the data for a DOI.
+    pub async fn fetch_doi(&self, doi: &str, source: Source) -> Result<sled::IVec, Error> {
         if !valid_doi(doi) {
             return Err(Error::NotFound(doi.to_string()));
         }
-        let doi_url = crossref::paper_url(doi);
-        webcache::fetch(&self.db, &self.client, &doi_url)
+        let url = match source {
+            Source::Crossref => crossref::paper_url(doi),
+            Source::SemanticScholar => ss::paper_url(doi),
+        };
+        webcache::fetch(&self.db, &self.client, &url)
             .await?
             .ok_or(Error::NotFound(doi.to_string()))
     }
 
-    pub async fn fetch_doi(&self, doi: &str) -> Result<crossref::Paper, Error> {
-        let json = self.fetch_doi_json(doi).await?;
+    /// Get a paper from the Crossref API by its DOI.
+    pub async fn crossref_paper(&self, doi: &str) -> Result<crossref::Paper, Error> {
+        let json = self.fetch_doi(doi, Source::Crossref).await?;
         let paper = serde_json::from_slice(json.as_ref())?;
         Ok(paper)
     }
 
-    pub async fn fetch_doi_ss_json(&self, doi: &str) -> Result<sled::IVec, Error> {
-        if !valid_doi(doi) {
-            return Err(Error::NotFound(doi.to_string()));
-        }
-        let doi_url = ss::paper_url(doi);
-        webcache::fetch(&self.db, &self.client, &doi_url)
-            .await?
-            .ok_or(Error::NotFound(doi.to_string()))
-    }
-
-    pub async fn fetch_doi_ss(&self, doi: &str) -> Result<ss::Paper, Error> {
-        let json = self.fetch_doi_ss_json(doi).await?;
+    /// Get a paper from the Semantic Scholar API by its DOI.
+    pub async fn ss_paper(&self, doi: &str) -> Result<ss::Paper, Error> {
+        let json = self.fetch_doi(doi, Source::SemanticScholar).await?;
         let paper = serde_json::from_slice(json.as_ref())?;
         Ok(paper)
     }
@@ -153,7 +154,7 @@ impl Context {
                 // that other identical entries *do* have an abstract.
                 for other_doi in paper.identical_dois() {
                     // TODO Maybe try to suppress "not found" errors when fetching other_paper?
-                    let other_paper = self.fetch_doi(&other_doi).await?;
+                    let other_paper = self.crossref_paper(&other_doi).await?;
                     if let Some(abstract_) = other_paper.abstract_ {
                         return Ok(Abstract::Jats(abstract_.to_string()));
                     }
@@ -161,7 +162,7 @@ impl Context {
 
                 // Next, try the Semantic Scholar API.
                 // TODO Again, don't abort if this is not found.
-                let ss_paper = self.fetch_doi_ss(&paper.doi).await?;
+                let ss_paper = self.ss_paper(&paper.doi).await?;
                 if let Some(abstract_) = ss_paper.abstract_ {
                     return Ok(Abstract::Text(abstract_));
                 }
