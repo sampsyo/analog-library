@@ -44,7 +44,11 @@ pub fn paper(paper: Paper, abstract_: Abstract) -> Markup {
             html! { div.abstract { (content) } }
         }
         Abstract::Text(t) => {
-            html! { div.abstract { (t) } }
+            html! { div.abstract {
+                @for par in t.trim().split("\n\n") {
+                    p { (par) }
+                }
+            } }
         }
         Abstract::Missing => {
             html! { div.abstract.missing { "Data missing." } }
