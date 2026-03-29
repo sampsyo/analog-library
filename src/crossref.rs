@@ -200,7 +200,7 @@ const MONTHS: [&str; 12] = [
 ];
 
 fn month(n: u32) -> &'static str {
-    MONTHS.get(n as usize).copied().unwrap_or("?")
+    MONTHS.get((n - 1) as usize).copied().unwrap_or("?")
 }
 
 pub fn domain(url: &str) -> Option<String> {
