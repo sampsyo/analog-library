@@ -153,19 +153,27 @@ impl Context {
                 // When a paper is missing an abstract, it is often the case
                 // that other identical entries *do* have an abstract.
                 for other_doi in paper.identical_dois() {
-                    // TODO Maybe try to suppress "not found" errors when fetching other_paper?
-                    let other_paper = self.crossref_paper(&other_doi).await?;
-                    if let Some(abstract_) = other_paper.abstract_ {
-                        return Ok(Abstract::Jats(abstract_.to_string()));
-                    }
+                    match self.crossref_paper(&other_doi).await {
+                        Ok(other_paper) => {
+                            if let Some(abstract_) = other_paper.abstract_ {
+                                return Ok(Abstract::Jats(abstract_.to_string()));
+                            }
+                        }
+                        Err(Error::NotFound(_)) => continue,
+                        Err(e) => return Err(e),
+                    };
                 }
 
                 // Next, try the Semantic Scholar API.
-                // TODO Again, don't abort if this is not found.
-                let ss_paper = self.ss_paper(&paper.doi).await?;
-                if let Some(abstract_) = ss_paper.abstract_ {
-                    return Ok(Abstract::Text(abstract_));
-                }
+                match self.ss_paper(&paper.doi).await {
+                    Ok(ss_paper) => {
+                        if let Some(abstract_) = ss_paper.abstract_ {
+                            return Ok(Abstract::Text(abstract_));
+                        }
+                    }
+                    Err(Error::NotFound(_)) => (),
+                    Err(e) => return Err(e),
+                };
 
                 Ok(Abstract::Missing)
             }
