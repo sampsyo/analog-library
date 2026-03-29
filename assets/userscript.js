@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name            Analog Library
 // @description     Redirect the ACM Digital Library to an Analog Library interface
+// @icon            https://dl.acm.org/pb-assets/head-metadata/apple-touch-icon.png
 // @author          apropos
 // @version         1.0
 // @include         *://dl.acm.org/doi/*
