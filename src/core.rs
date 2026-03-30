@@ -203,7 +203,7 @@ impl Context {
         let paper = self.crossref_paper(doi).await?;
         let alternates = self.crossref_alternates(&paper).await?;
         let abstract_ = self.get_abstract(&paper, &alternates).await?;
-        Ok(view::paper(paper, abstract_))
+        Ok(view::paper(paper, &alternates, abstract_))
     }
 
     pub fn dump_cache(&self) -> Result<(), Error> {

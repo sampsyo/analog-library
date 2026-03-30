@@ -168,6 +168,12 @@ pre.bibtex {
   white-space: pre-wrap;
 }
 
+ul.alternates {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 0;
+}
+
 .version {
   color: var(--faded-color);
   display: inline-block;

@@ -29,7 +29,7 @@ fn page(title: &str, main: Markup, head: Markup) -> Markup {
     }
 }
 
-pub fn paper(paper: Paper, abstract_: Abstract) -> Markup {
+pub fn paper(paper: Paper, alternates: &[Paper], abstract_: Abstract) -> Markup {
     let title = paper.title();
 
     // Try converting the abstract from JATS XML to HTML we can render. If this
@@ -106,6 +106,18 @@ pub fn paper(paper: Paper, abstract_: Abstract) -> Markup {
                 (". ")
                 (paper.published)
                 (".")
+            }
+        }
+        @if !alternates.is_empty() {
+            span.label { "Other Versions:" } " "
+            ul.alternates {
+                @for other_paper in alternates {
+                    li {
+                        a href=( format!("/doi/{}", other_paper.doi) ) { ( other_paper.doi ) }
+                        ": "
+                        ( other_paper.container_title )
+                    }
+                }
             }
         }
         span.label { "Abstract:" } " "
