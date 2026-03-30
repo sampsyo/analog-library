@@ -51,13 +51,12 @@ async fn show_paper(
     Path(doi): Path<String>,
     query: Query<PaperQuery>,
 ) -> Result<impl IntoResponse, Error> {
-    let paper_json = ctx.fetch_doi(&doi, Source::Crossref).await?;
     match query.format.as_deref() {
-        Some("json") => Ok(json_resp(paper_json.as_ref())),
-        _ => {
-            let paper = serde_json::from_slice(paper_json.as_ref())?;
-            Ok(ctx.render_paper(paper).await?.into_response())
+        Some("json") => {
+            let paper_json = ctx.fetch_doi(&doi, Source::Crossref).await?;
+            Ok(json_resp(paper_json.as_ref()))
         }
+        _ => Ok(ctx.render_paper(&doi).await?.into_response()),
     }
 }
 

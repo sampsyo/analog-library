@@ -39,8 +39,7 @@ async fn run() -> Result<(), MainError> {
         }
         Some("html") => {
             let doi: String = args.free_from_str()?;
-            let paper = ctx.crossref_paper(&doi).await?;
-            let html = ctx.render_paper(paper).await?;
+            let html = ctx.render_paper(&doi).await?;
             println!("{}", html.into_string());
         }
         Some("bib") => {

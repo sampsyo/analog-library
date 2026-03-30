@@ -180,7 +180,8 @@ impl Context {
         }
     }
 
-    pub async fn render_paper(&self, paper: crossref::Paper) -> Result<Markup, Error> {
+    pub async fn render_paper(&self, doi: &str) -> Result<Markup, Error> {
+        let paper = self.crossref_paper(doi).await?;
         let abstract_ = self.get_abstract(&paper).await?;
         Ok(view::paper(paper, abstract_))
     }
