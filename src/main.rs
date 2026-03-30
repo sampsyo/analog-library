@@ -50,7 +50,8 @@ async fn run() -> Result<(), MainError> {
         Some("abs") => {
             let doi: String = args.free_from_str()?;
             let paper = ctx.crossref_paper(&doi).await?;
-            let abs = ctx.get_abstract(&paper).await?;
+            let alternates = ctx.crossref_alternates(&paper).await?;
+            let abs = ctx.get_abstract(&paper, &alternates).await?;
             match abs.text() {
                 Some(text) => println!("{text}"),
                 None => println!("No abstract found."),

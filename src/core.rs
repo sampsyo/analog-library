@@ -1,5 +1,6 @@
 use crate::{crossref, jats, ss, view, webcache};
 use basset::assets;
+use futures::stream::{self, StreamExt, TryStreamExt};
 use maud::Markup;
 
 // Load or embed static assets. The `RSRC` array contains the files that we will
@@ -144,24 +145,20 @@ impl Context {
     }
 
     /// Find an abstract for this paper, possibly by making additional API requests.
-    pub async fn get_abstract(&self, paper: &crossref::Paper) -> Result<Abstract, Error> {
+    pub async fn get_abstract(
+        &self,
+        paper: &crossref::Paper,
+        alternates: &[crossref::Paper],
+    ) -> Result<Abstract, Error> {
         match &paper.abstract_ {
             Some(abs) => Ok(Abstract::Jats(abs.to_string())),
             None => {
-                // Some papers in the Crossref database have several "identical"
-                // entries, with different DOIs and different sets of metadata.
                 // When a paper is missing an abstract, it is often the case
                 // that other identical entries *do* have an abstract.
-                for other_doi in paper.identical_dois() {
-                    match self.crossref_paper(&other_doi).await {
-                        Ok(other_paper) => {
-                            if let Some(abstract_) = other_paper.abstract_ {
-                                return Ok(Abstract::Jats(abstract_.to_string()));
-                            }
-                        }
-                        Err(Error::NotFound(_)) => continue,
-                        Err(e) => return Err(e),
-                    };
+                for other_paper in alternates {
+                    if let Some(abstract_) = &other_paper.abstract_ {
+                        return Ok(Abstract::Jats(abstract_.to_string()));
+                    }
                 }
 
                 // Next, try the Semantic Scholar API.
@@ -180,9 +177,32 @@ impl Context {
         }
     }
 
+    /// Fetch any alternate versions of a paper that Crossref lists.
+    ///
+    /// Some papers in the Crossref database have several "identical" entries,
+    /// with different DOIs and different sets of metadata. For example, a paper
+    /// can be published both in PLDI (as an "inproceedings" item) and in
+    /// "SIGPLAN Notices" (as an "article" item).
+    pub async fn crossref_alternates(
+        &self,
+        paper: &crossref::Paper,
+    ) -> Result<Vec<crossref::Paper>, Error> {
+        stream::iter(paper.identical_dois())
+            .filter_map({
+                async |other_doi| match self.crossref_paper(&other_doi).await {
+                    Ok(other_paper) => Some(Ok(other_paper)),
+                    Err(Error::NotFound(_)) => None,
+                    Err(e) => Some(Err(e)),
+                }
+            })
+            .try_collect()
+            .await
+    }
+
     pub async fn render_paper(&self, doi: &str) -> Result<Markup, Error> {
         let paper = self.crossref_paper(doi).await?;
-        let abstract_ = self.get_abstract(&paper).await?;
+        let alternates = self.crossref_alternates(&paper).await?;
+        let abstract_ = self.get_abstract(&paper, &alternates).await?;
         Ok(view::paper(paper, abstract_))
     }
 
