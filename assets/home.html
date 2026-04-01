@@ -35,6 +35,42 @@
       >^https://dl.acm.org/doi/(abs/)?(.*)|https://al.radbox.org/doi/$2</code
     >
   </li>
+  <li>
+    <strong>Redirector browser add-on.</strong> Install the <a href="https://einaregilsson.com/redirector/">Redirector</a> extension (available for Firefox, Chrome, Edge and Opera) and create the following rewrite rule.
+    
+    <details><summary>Rewrite rule</summary>
+      <table>
+        <tr>
+          <th>Field</th>
+          <th>Value</th>
+        </tr>
+        <tr>
+          <td>Description:</td>
+          <td><em>Up to you!</em></td>
+        </tr>
+        <tr>
+          <td>Example URL:</td>
+          <td>https://doi.org/10.1145/237090.237140 (but this is actually <em>up to you</em>)</td>
+        </tr>
+          <tr>
+          <td>Include pattern:</td>
+          <td>https://doi.org/*</td>
+        </tr>
+          <tr>
+          <td>Redirect to:</td>
+          <td>https://al.radbox.org/doi/$1</td>
+        </tr>
+          <tr>
+          <td>Pattern type:</td>
+          <td><em>Select "Wildcard"</td>
+        </tr>
+        <tr>
+          <td>Pattern Description:</td>
+          <td><em>Up to you!</em></td>
+      </tr>
+    </table>
+  </details>
+  </li>
 </ul>
 <p>
   Analog Library <span class="edition">Premium Edition&trade;</span> is by
