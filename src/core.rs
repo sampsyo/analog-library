@@ -207,15 +207,18 @@ impl Context {
     }
 
     pub fn dump_cache(&self) -> Result<(), Error> {
+        // Print some details about each Crossref API cache entry.
         for entry in webcache::cache_scan(&self.db) {
             let (url, time, json) = entry?;
-            match serde_json::from_slice::<crossref::Paper>(json.as_ref()) {
-                Ok(paper) => println!("{} {} {}", time, &paper.doi, paper.title()),
-                Err(_) => println!(
-                    "{} deserialization error: {}",
-                    time,
-                    String::from_utf8_lossy(&url)
-                ),
+            if url.starts_with(b"https://api.crossref.org/v1/works/") {
+                match serde_json::from_slice::<crossref::Paper>(json.as_ref()) {
+                    Ok(paper) => println!("{} {} {}", time, &paper.doi, paper.title()),
+                    Err(_) => println!(
+                        "{} deserialization error: {}",
+                        time,
+                        String::from_utf8_lossy(&url)
+                    ),
+                }
             }
         }
         Ok(())
