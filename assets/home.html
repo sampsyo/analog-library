@@ -36,8 +36,11 @@
     >
   </li>
   <li>
-    <strong>Browser extension.</strong> Install the <a href="https://einaregilsson.com/redirector/">Redirector</a> extension and create the following rewrite rule.
-    <details><summary>Rewrite rule</summary>
+    <strong>Browser extension.</strong> Install the
+    <a href="https://einaregilsson.com/redirector/">Redirector</a> extension and
+    create the following rewrite rule.
+    <details>
+      <summary>Rewrite rule</summary>
       <table>
         <tr>
           <th>Field</th>
@@ -45,19 +48,19 @@
         </tr>
         <tr>
           <td>Example URL:</td>
-          <td>https://doi.org/10.1145/237090.237140</td>
+          <td><code>https://doi.org/10.1145/237090.237140</code></td>
         </tr>
         <tr>
           <td>Include pattern:</td>
-          <td>https://doi.org/*</td>
+          <td><code>https://doi.org/*</code></td>
         </tr>
         <tr>
           <td>Redirect to:</td>
-          <td>https://__HOST__/doi/$1</td>
+          <td><code>https://__HOST__/doi/$1</code></td>
         </tr>
         <tr>
           <td>Pattern type:</td>
-          <td><em>Select "Wildcard"</td>
+          <td><em>Wildcard</em></td>
         </tr>
       </table>
     </details>
