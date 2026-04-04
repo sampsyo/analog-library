@@ -2,7 +2,7 @@ use crate::{crossref, jats, ss, view, webcache};
 use basset::assets;
 use futures::stream::{self, StreamExt, TryStreamExt};
 use maud::Markup;
-use tracing::{info, instrument};
+use tracing::{debug, info, instrument};
 
 // Load or embed static assets. The `RSRC` array contains the files that we will
 // also serve under the `/rsrc/` directory.
@@ -119,9 +119,11 @@ impl Default for Context {
 
 impl Context {
     // Make an API request for the data for a DOI.
+    #[instrument(skip(self))]
     pub async fn fetch_doi(&self, doi: &str, source: Source) -> Result<sled::IVec, Error> {
-        info!(doi, ?source, "fetch");
+        debug!("fetching");
         if !valid_doi(doi) {
+            debug!("invalid DOI");
             return Err(Error::NotFound(doi.to_string()));
         }
         let url = match source {
@@ -130,7 +132,10 @@ impl Context {
         };
         webcache::fetch(&self.db, &self.client, &url)
             .await?
-            .ok_or(Error::NotFound(doi.to_string()))
+            .ok_or_else(|| {
+                info!("not found");
+                Error::NotFound(doi.to_string())
+            })
     }
 
     /// Get a paper from the Crossref API by its DOI.
@@ -154,12 +159,16 @@ impl Context {
         alternates: &[crossref::Paper],
     ) -> Result<Abstract, Error> {
         match &paper.abstract_ {
-            Some(abs) => Ok(Abstract::Jats(abs.to_string())),
+            Some(abs) => {
+                debug!("original has abstract");
+                Ok(Abstract::Jats(abs.to_string()))
+            }
             None => {
                 // When a paper is missing an abstract, it is often the case
                 // that other identical entries *do* have an abstract.
                 for other_paper in alternates {
                     if let Some(abstract_) = &other_paper.abstract_ {
+                        debug!(doi = other_paper.doi, "alternate has abstract");
                         return Ok(Abstract::Jats(abstract_.to_string()));
                     }
                 }
@@ -168,6 +177,7 @@ impl Context {
                 match self.ss_paper(&paper.doi).await {
                     Ok(ss_paper) => {
                         if let Some(abstract_) = ss_paper.abstract_ {
+                            debug!("SemanticScholar has abstract");
                             return Ok(Abstract::Text(abstract_));
                         }
                     }
@@ -175,6 +185,7 @@ impl Context {
                     Err(e) => return Err(e),
                 };
 
+                debug!("no abstract found");
                 Ok(Abstract::Missing)
             }
         }
@@ -190,6 +201,7 @@ impl Context {
         &self,
         paper: &crossref::Paper,
     ) -> Result<Vec<crossref::Paper>, Error> {
+        debug!(alternates = ?paper.identical_dois());
         stream::iter(paper.identical_dois())
             .filter_map({
                 async |other_doi| match self.crossref_paper(&other_doi).await {

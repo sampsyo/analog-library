@@ -10,7 +10,6 @@ mod webcache;
 use core::Context;
 use std::io::Write;
 use std::process::ExitCode;
-use tracing_subscriber;
 
 use crate::core::Source;
 
