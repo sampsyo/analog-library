@@ -195,7 +195,10 @@ pub fn doi_not_found(doi: &str) -> Markup {
                 code { (doi) } (". ")
                 ("It uses the ")
                 a href="https://www.crossref.org" { "Crossref" }
-                (" database, so only DOIs present there can be rendered.")
+                (" database, so only DOIs present there can be rendered. ")
+                ("If this is a real DOI, try ")
+                a href=(format!("https://dx.doi.org/{}", doi)) { "the official DOI redirector" }
+                (" to get to the publisher page.")
             }
         },
         html! {},
