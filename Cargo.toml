@@ -23,6 +23,8 @@ url = "2"
 mime = "0.3"
 pico-args = "0.5"
 futures = "0.3"
+tracing = "0.1"
+tracing-subscriber = "0.3"
 
 [profile.profiling]
 inherits = "release"
