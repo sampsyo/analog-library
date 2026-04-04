@@ -21,7 +21,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-build-${{ hashFiles('**/Cargo.lock') }}
       - run: cargo test
       - run: cargo fmt --check
       - run: cargo clippy
@@ -44,7 +44,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-deploy-${{ hashFiles('**/Cargo.lock') }}
       - name: build
         run: cargo build --release --target=x86_64-unknown-linux-musl
       - name: deploy
