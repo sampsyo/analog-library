@@ -1,6 +1,7 @@
 use reqwest::StatusCode;
 use std::convert::Infallible;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tracing::{debug, instrument};
 
 const CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24);
 
@@ -63,17 +64,24 @@ fn cache_get(db: &sled::Db, url: &str) -> sled::Result<Cached<sled::IVec>> {
             // Is the cache entry expired?
             let age = SystemTime::now().duration_since(time).unwrap();
             if age > CACHE_EXPIRE {
+                debug!("expired miss");
                 tx.remove(ts_key.as_bytes())?;
                 tx.remove(url)?;
                 Ok(Cached::Invalid)
             } else {
                 match tx.get(url)? {
-                    Some(body) => Ok(Cached::Valid(body)),
-                    None => Ok(Cached::Error),
+                    Some(body) => {
+                        debug!("hit");
+                        Ok(Cached::Valid(body))
+                    }
+                    None => {
+                        debug!("error hit");
+                        Ok(Cached::Error)
+                    }
                 }
             }
         } else {
-            // Cold miss.
+            debug!("cold miss");
             Ok(Cached::Invalid)
         }
     }))
@@ -111,6 +119,7 @@ pub fn cache_scan(
         .filter_map(|opt| opt.transpose())
 }
 
+#[instrument(skip(db, client))]
 pub async fn fetch(
     db: &sled::Db,
     client: &reqwest::Client,
@@ -121,16 +130,19 @@ pub async fn fetch(
         Cached::Error => Ok(None),
         Cached::Invalid => {
             // Cache miss.
+            debug!("sending request");
             let res = client
                 .get(url)
                 .header("Accept", "application/json")
                 .send()
                 .await?;
             if res.status() == StatusCode::OK {
+                debug!("filling valid data");
                 let body = res.bytes().await?;
                 cache_set(db, url, Cached::Valid(body.as_ref()))?;
                 Ok(Some(body.as_ref().into()))
             } else {
+                debug!(status = ?res.status(), "filling error");
                 cache_set(db, url, Cached::Error)?;
                 Ok(None)
             }
