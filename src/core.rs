@@ -2,7 +2,7 @@ use crate::{crossref, jats, ss, view, webcache};
 use basset::assets;
 use futures::stream::{self, StreamExt, TryStreamExt};
 use maud::Markup;
-use tracing::{debug, info, instrument};
+use tracing::{debug, error, info, instrument};
 
 // Load or embed static assets. The `RSRC` array contains the files that we will
 // also serve under the `/rsrc/` directory.
@@ -121,9 +121,9 @@ impl Context {
     // Make an API request for the data for a DOI.
     #[instrument(skip(self))]
     pub async fn fetch_doi(&self, doi: &str, source: Source) -> Result<sled::IVec, Error> {
-        debug!("fetching");
+        info!("fetching");
         if !valid_doi(doi) {
-            debug!("invalid DOI");
+            error!("invalid DOI");
             return Err(Error::NotFound(doi.to_string()));
         }
         let url = match source {
@@ -133,7 +133,7 @@ impl Context {
         webcache::fetch(&self.db, &self.client, &url)
             .await?
             .ok_or_else(|| {
-                info!("not found");
+                error!("not found");
                 Error::NotFound(doi.to_string())
             })
     }
@@ -141,14 +141,20 @@ impl Context {
     /// Get a paper from the Crossref API by its DOI.
     pub async fn crossref_paper(&self, doi: &str) -> Result<crossref::Paper, Error> {
         let json = self.fetch_doi(doi, Source::Crossref).await?;
-        let paper = serde_json::from_slice(json.as_ref())?;
+        let paper = serde_json::from_slice(json.as_ref()).map_err(|err| {
+            error!(?err, "invalid Crossref JSON");
+            err
+        })?;
         Ok(paper)
     }
 
     /// Get a paper from the Semantic Scholar API by its DOI.
     pub async fn ss_paper(&self, doi: &str) -> Result<ss::Paper, Error> {
         let json = self.fetch_doi(doi, Source::SemanticScholar).await?;
-        let paper = serde_json::from_slice(json.as_ref())?;
+        let paper = serde_json::from_slice(json.as_ref()).map_err(|err| {
+            error!(?err, "invalid SemanticScholar JSON");
+            err
+        })?;
         Ok(paper)
     }
 
