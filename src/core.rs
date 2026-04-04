@@ -191,7 +191,7 @@ impl Context {
                     Err(e) => return Err(e),
                 };
 
-                debug!("no abstract found");
+                info!("no abstract found");
                 Ok(Abstract::Missing)
             }
         }
