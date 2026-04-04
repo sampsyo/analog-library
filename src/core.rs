@@ -2,7 +2,7 @@ use crate::{crossref, jats, ss, view, webcache};
 use basset::assets;
 use futures::stream::{self, StreamExt, TryStreamExt};
 use maud::Markup;
-use tracing::{Level, event, info_span};
+use tracing::{info, instrument};
 
 // Load or embed static assets. The `RSRC` array contains the files that we will
 // also serve under the `/rsrc/` directory.
@@ -120,8 +120,7 @@ impl Default for Context {
 impl Context {
     // Make an API request for the data for a DOI.
     pub async fn fetch_doi(&self, doi: &str, source: Source) -> Result<sled::IVec, Error> {
-        event!(Level::INFO, "fetch {} {:?}", doi, source);
-
+        info!(doi, ?source, "fetch");
         if !valid_doi(doi) {
             return Err(Error::NotFound(doi.to_string()));
         }
@@ -203,9 +202,8 @@ impl Context {
             .await
     }
 
+    #[instrument(skip(self))]
     pub async fn render_paper(&self, doi: &str) -> Result<Markup, Error> {
-        let span = info_span!("render", doi);
-        let _guard = span.enter();
         let paper = self.crossref_paper(doi).await?;
         let alternates = self.crossref_alternates(&paper).await?;
         let abstract_ = self.get_abstract(&paper, &alternates).await?;
