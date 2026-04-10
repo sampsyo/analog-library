@@ -35,6 +35,34 @@
       >^https?://dl.acm.org/doi/(abs/|pdf/|epdf/|fullHtml/)?(.*)|https://al.radbox.org/doi/$2</code
     >
   </li>
+  <li>
+    <strong>Browser extension.</strong> Install the
+    <a href="https://einaregilsson.com/redirector/">Redirector</a> extension and
+    create the rewrite rule below.
+    <details>
+      <summary>Rewrite rule</summary>
+      <table>
+        <tr>
+          <td><strong>Example URL:</strong></td>
+          <td><code>https://doi.org/10.1145/237090.237140</code></td>
+        </tr>
+        <tr>
+          <td><strong>Include pattern:</strong></td>
+          <td><code>https://dl.acm.org/doi/*</code></td>
+        </tr>
+        <tr>
+          <td><strong>Redirect to:</strong></td>
+          <td><code>https://__HOST__/doi/$1</code></td>
+        </tr>
+        <tr>
+          <td><strong>Pattern type:</strong></td>
+          <td><em>Wildcard</em></td>
+        </tr>
+      </table>
+      Or, to redirect all standard DOI URLs, use the pattern
+      <code>https://doi.org/*</code>.
+    </details>
+  </li>
 </ul>
 <p>
   Analog Library <span class="edition">Premium Edition&trade;</span> is by
