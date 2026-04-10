@@ -38,7 +38,7 @@
   <li>
     <strong>Browser extension.</strong> Install the
     <a href="https://einaregilsson.com/redirector/">Redirector</a> extension and
-    create the following rewrite rule.
+    create the rewrite rule below.
     <details>
       <summary>Rewrite rule</summary>
       <table>
@@ -52,7 +52,7 @@
         </tr>
         <tr>
           <td>Include pattern:</td>
-          <td><code>https://doi.org/*</code></td>
+          <td><code>https://dl.acm.org/doi/*</code></td>
         </tr>
         <tr>
           <td>Redirect to:</td>
@@ -63,6 +63,10 @@
           <td><em>Wildcard</em></td>
         </tr>
       </table>
+      <p>
+        Or, to redirect all standard DOI URLs, use the pattern
+        <code>https://doi.org/*</code>.
+      </p>
     </details>
   </li>
 </ul>
