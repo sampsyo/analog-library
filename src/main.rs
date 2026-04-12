@@ -27,12 +27,10 @@ enum MainError {
 
 /// Set up logging to the console.
 fn log_setup(verbose: bool) {
-    use tracing::Level;
-    use tracing::level_filters::LevelFilter;
-    use tracing_subscriber::filter::Targets;
-    use tracing_subscriber::fmt::Subscriber;
-    use tracing_subscriber::layer::SubscriberExt;
-    use tracing_subscriber::util::SubscriberInitExt;
+    use tracing::{Level, level_filters::LevelFilter};
+    use tracing_subscriber::{
+        filter::Targets, fmt::Subscriber, layer::SubscriberExt, util::SubscriberInitExt,
+    };
 
     // This is awkward because of two weird behaviors in tracing_subscriber: (1) it
     // defaults to logging to stdout instead of stderr, and (2) when you try to fix
