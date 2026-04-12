@@ -45,7 +45,7 @@ impl<'a> Display for Entry<'a> {
         write_pair(f, "author", BibStr::new(Authors(&self.0.author)))?;
         match type_ {
             Type::Article => {
-                write_str(f, "journal", &self.0.container_title)?;
+                write_str_opt(f, "journal", self.0.container_title.first())?;
                 write_str_opt(f, "volume", self.0.volume.as_deref())?;
                 write_str_opt(f, "issue", self.0.issue.as_deref())?;
                 write_pair(f, "year", self.0.published.year())?;
@@ -186,18 +186,28 @@ impl<T: Display> Display for BibStr<T> {
 /// These citation keys currently look like `lamport1978`. I'm sure we can do a
 /// lot better, but this is better than nothing.
 fn citekey(paper: &crossref::Paper) -> String {
-    let author: String = paper.author[0]
-        .family
-        .chars()
-        .filter_map(|c| {
-            if c.is_ascii_alphabetic() {
-                Some(c.to_ascii_lowercase())
-            } else {
-                None
-            }
-        })
-        .collect();
-    format!("{}{}", author, paper.published.year())
+    if let Some(author) = paper.author.first() {
+        let author: String = author
+            .family
+            .chars()
+            .filter_map(|c| {
+                if c.is_ascii_alphabetic() {
+                    Some(c.to_ascii_lowercase())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        format!("{}{}", author, paper.published.year())
+    } else {
+        let word = paper
+            .title
+            .split_ascii_whitespace()
+            .next()
+            .unwrap_or("cite")
+            .to_ascii_lowercase();
+        format!("{}{}", word, paper.published.year())
+    }
 }
 
 #[cfg(test)]
