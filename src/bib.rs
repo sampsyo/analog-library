@@ -45,7 +45,7 @@ impl<'a> Display for Entry<'a> {
         write_pair(f, "author", BibStr::new(Authors(&self.0.author)))?;
         match type_ {
             Type::Article => {
-                write_str(f, "journal", &self.0.container_title)?;
+                write_str_opt(f, "journal", self.0.container_title.first())?;
                 write_str_opt(f, "volume", self.0.volume.as_deref())?;
                 write_str_opt(f, "issue", self.0.issue.as_deref())?;
                 write_pair(f, "year", self.0.published.year())?;
