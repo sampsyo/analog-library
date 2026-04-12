@@ -12,6 +12,7 @@ pub struct Paper {
     pub title: String,
     pub subtitle: Vec<String>,
     pub short_title: Vec<String>,
+    #[serde(default)]
     pub author: Vec<Author>,
     #[serde(rename = "type")]
     pub type_: String,
