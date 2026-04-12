@@ -12,7 +12,6 @@ pub struct Paper {
     pub title: String,
     pub subtitle: Vec<String>,
     pub short_title: Vec<String>,
-    #[serde(default)]
     pub author: Vec<Author>,
     #[serde(rename = "type")]
     pub type_: String,
@@ -28,7 +27,7 @@ pub struct Paper {
     #[serde(rename = "DOI")]
     pub doi: String,
 
-    pub container_title: Strings,
+    pub container_title: String,
     pub proceedings_subject: Option<String>,
     pub page: Option<String>,
     pub volume: Option<String>,
@@ -72,24 +71,6 @@ pub struct Relation {
 pub struct Resource {
     #[serde(rename = "URL")]
     pub url: String,
-}
-
-/// A deserialization utility for fields that might be a string or might be an
-/// array of strings.
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(untagged)]
-pub enum Strings {
-    One(String),
-    Many(Vec<String>),
-}
-
-impl Strings {
-    pub fn first(&self) -> Option<&str> {
-        match self {
-            Strings::One(s) => Some(s),
-            Strings::Many(v) => v.first().map(|s| s.as_ref()),
-        }
-    }
 }
 
 impl Paper {
@@ -151,7 +132,7 @@ impl Paper {
             // When the `proceedings-subject` field is present, then both it and
             // `event` seem to hold different fragments of the event name. Fall
             // back to the more generic container name.
-            self.container_title.first()
+            Some(&self.container_title)
         } else if let Some(s) = &self.event {
             // Otherwise, the event field usually has a friendlier name for the
             // conference than the generic container.

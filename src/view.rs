@@ -75,20 +75,18 @@ pub fn paper(paper: Paper, alternates: &[Paper], abstract_: Abstract) -> Markup 
             }
         }
         h1 { (title) };
-        @if !paper.author.is_empty() {
-            span.label { "Authors:" } " "
-            div.authors {
-                span.author { (paper.author[0].name()) }
-                @for author in &paper.author[1..] {
-                    ", "
-                    span.author { (author.name()) }
-                }
+        span.label { "Authors:" } " "
+        div.authors {
+            span.author { (paper.author[0].name()) }
+            @for author in &paper.author[1..] {
+                ", "
+                span.author { (author.name()) }
             }
-        }
+        };
         span.label { "Published:" } " "
         div.published {
             @if paper.type_ == "journal-article" {
-                ( paper.container_title.first().unwrap_or("Unknown journal") )
+                (paper.container_title)
                 @if let Some(vol) = &paper.volume {
                     (", volume ") (vol)
                 }
@@ -117,7 +115,7 @@ pub fn paper(paper: Paper, alternates: &[Paper], abstract_: Abstract) -> Markup 
                     li {
                         a href=( format!("/doi/{}", other_paper.doi) ) { ( other_paper.doi ) }
                         ": "
-                        ( other_paper.container_title.first().unwrap_or("Unknown") )
+                        ( other_paper.container_title )
                     }
                 }
             }
