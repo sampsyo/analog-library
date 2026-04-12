@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: codeberg-small
+    container:
+      image: ghcr.io/catthehacker/ubuntu:rust-latest
     env:
       RUSTFLAGS: "-Dwarnings"
     steps:
@@ -30,6 +32,8 @@ jobs:
     needs: build
     if: ${{forgejo.event_name=='push' && forgejo.ref=='refs/heads/main' && forgejo.repository_owner=='sampsyo'}}
     runs-on: codeberg-small
+    container:
+      image: ghcr.io/catthehacker/ubuntu:rust-latest
     steps:
       - name: toolchain
         run: |
