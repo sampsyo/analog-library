@@ -7,9 +7,23 @@ use axum::{
         StatusCode,
         header::{self, CONTENT_TYPE, HeaderMap, HeaderValue},
     },
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
     routing::get,
 };
+use tracing::debug;
+
+/// Common URL components that, because of automatic redirection utilities, can
+/// _accidentally_ show up on DOIs.
+const STRIP_PREFIX: &[&str] = &[
+    "abs/",
+    "pdf/",
+    "doi/",
+    "doi.org/",
+    "book/",
+    "fullHtml/",
+    "epdf/",
+    "proceedings/",
+];
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
@@ -51,6 +65,14 @@ async fn show_paper(
     Path(doi): Path<String>,
     query: Query<PaperQuery>,
 ) -> Result<impl IntoResponse, Error> {
+    for prefix in STRIP_PREFIX {
+        if let Some(suffix) = doi.strip_prefix(prefix) {
+            debug!(from = doi, to = suffix, "redirecting");
+            let path = format!("/doi/{}", suffix);
+            return Ok(Redirect::permanent(&path).into_response());
+        }
+    }
+
     match query.format.as_deref() {
         Some("json") => {
             let paper_json = ctx.fetch_doi(&doi, Source::Crossref).await?;
