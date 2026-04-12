@@ -26,7 +26,9 @@ enum MainError {
 }
 
 async fn run() -> Result<(), MainError> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::fmt()
+        .with_writer(std::io::stderr)
+        .init();
     let mut args = pico_args::Arguments::from_env();
     let ctx = Context::default();
     match args.subcommand()?.as_deref() {
