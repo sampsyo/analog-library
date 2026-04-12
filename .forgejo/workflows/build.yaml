@@ -30,7 +30,7 @@ jobs:
 
   deploy:
     needs: build
-    if: ${{forgejo.event_name=='push' && forgejo.ref=='refs/heads/main' && forgejo.repository_owner=='sampsyo'}}
+    if: ${{forgejo.event_name=='push' && forgejo.ref=='refs/heads/main' && forgejo.repository_owner=='samps'}}
     runs-on: codeberg-small
     container:
       image: ghcr.io/catthehacker/ubuntu:rust-latest
