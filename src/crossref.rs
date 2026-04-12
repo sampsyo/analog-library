@@ -46,7 +46,7 @@ pub struct Date {
 pub struct Author {
     #[serde(rename = "ORCID")]
     pub orcid: Option<String>,
-    pub given: String,
+    pub given: Option<String>,
     pub family: String,
     pub sequence: String,
     pub affiliation: Vec<Affiliation>,
@@ -145,8 +145,10 @@ impl Paper {
 
 impl Author {
     pub fn name(&self) -> String {
-        // TODO Use the `sequence` field.
-        format!("{} {}", self.given, self.family)
+        match &self.given {
+            Some(given) => format!("{} {}", given, self.family),
+            None => self.family.to_string(), // RIP Arvind
+        }
     }
 }
 

@@ -119,8 +119,10 @@ impl<'a> Display for Authors<'a> {
             }
             first = false;
 
-            f.write_str(&a.given)?;
-            f.write_char(' ')?;
+            if let Some(given) = &a.given {
+                f.write_str(given)?;
+                f.write_char(' ')?;
+            }
             f.write_str(&a.family)?;
         }
         Ok(())
