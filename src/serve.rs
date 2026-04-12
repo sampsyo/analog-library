@@ -27,7 +27,6 @@ const STRIP_PREFIX: &[&str] = &[
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        dbg!(&self);
         match self {
             Error::NotFound(doi) => (StatusCode::NOT_FOUND, view::doi_not_found(&doi)),
             Error::Parse(err) => (
