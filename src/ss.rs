@@ -17,6 +17,6 @@ pub struct Paper {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Author {
-    pub author_id: String,
+    pub author_id: Option<String>,
     pub name: String,
 }
