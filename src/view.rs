@@ -188,23 +188,51 @@ pub fn asset(filename: &str, host: &str) -> String {
 }
 
 pub fn doi_not_found(doi: &str) -> Markup {
-    page(
-        "404 Not Found",
-        html! {
-            h1 { "404 Not Found" }
-            p {
-                ("Analog Library does not have data for the DOI ")
-                code { (doi) } (". ")
-                ("It uses the ")
-                a href="https://www.crossref.org" { "Crossref" }
-                (" database, so only DOIs present there can be rendered. ")
-                ("If this is a real DOI, try ")
-                a href=(format!("https://dx.doi.org/{}", doi)) { "the official DOI redirector" }
-                (" to get to the publisher page.")
-            }
-        },
-        html! {},
-    )
+    if doi.starts_with("10.5555/") {
+        page(
+            "404 Not Found: Fake DOI",
+            html! {
+                h1 { "404 Not Found: Fake DOI" }
+                p {
+                    ("This seems to be a fake DOI used in the ACM Digital Library. ")
+                    ("The ACM DL appears to ")
+                    a href="https://nickwalker.us/blog/2024/acm-dl-fake-dois/" {
+                        ("use the ")
+                        code { ("10.5555/") }
+                        (" prefix for papers where it does not know the real DOI")
+                    }
+                    (", including many papers from non-ACM publishers. These fake DOIs ")
+                    ("do not appear in the ")
+                    a href="https://www.crossref.org" { "Crossref" }
+                    (" database, so Analog Library cannot display them.")
+                }
+                p {
+                    ("You can try viewing ")
+                    a href=(format!("https://dl.acm.org/doi/{}", doi)) { "this DOI on the ACM DL" }
+                    (" instead.")
+                }
+            },
+            html! {},
+        )
+    } else {
+        page(
+            "404 Not Found",
+            html! {
+                h1 { "404 Not Found" }
+                p {
+                    ("Analog Library does not have data for the DOI ")
+                    code { (doi) } (". ")
+                    ("It uses the ")
+                    a href="https://www.crossref.org" { "Crossref" }
+                    (" database, so only DOIs present there can be rendered. ")
+                    ("If this is a real DOI, try ")
+                    a href=(format!("https://dx.doi.org/{}", doi)) { "the official DOI redirector" }
+                    (" to get to the publisher page.")
+                }
+            },
+            html! {},
+        )
+    }
 }
 
 pub fn route_not_found() -> Markup {
