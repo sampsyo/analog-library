@@ -3,7 +3,7 @@ use std::convert::Infallible;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::{debug, instrument};
 
-const CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24);
+const CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24 * 7);
 
 enum Cached<T> {
     /// We're caching actual contents.
