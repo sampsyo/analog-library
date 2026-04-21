@@ -99,29 +99,26 @@ pub fn to_text(jats: &str) -> Result<String, Error> {
     ))
 }
 
+const JATS_TO_HTML: &[(&[u8], &str)] = &[
+    (b"jats:p", "p"),
+    (b"jats:italic", "i"),
+    (b"jats:bold", "b"),
+    (b"jats:sub", "sub"),
+    (b"jats:sup", "sup"),
+    (b"jats:underline", "u"),
+    (b"jats:strike", "s"),
+    (b"jats:monospace", "code"),
+    (b"jats:sc", "sc"),
+];
+
 /// Translate a JATS tag to an HTML tag.
 fn trans_tag(tag: &[u8]) -> Option<&'static str> {
-    if tag == b"jats:p" {
-        Some("p")
-    } else if tag == b"jats:italic" {
-        Some("i")
-    } else if tag == b"jats:bold" {
-        Some("b")
-    } else if tag == b"jats:sub" {
-        Some("sub")
-    } else if tag == b"jats:sup" {
-        Some("sup")
-    } else if tag == b"jats:underline" {
-        Some("u")
-    } else if tag == b"jats:strike" {
-        Some("s")
-    } else if tag == b"jats:monospace" {
-        Some("code")
-    } else if tag == b"jats:sc" {
-        Some("sc")
-    } else {
-        None
+    for (jats, html) in JATS_TO_HTML {
+        if tag == *jats {
+            return Some(html);
+        }
     }
+    return None;
 }
 
 /// Check if we should ignore the entire contents of a given JATS tag.
