@@ -113,6 +113,10 @@ nav {
   p:nth-child(1) {
     margin-top: 0;
   }
+
+  sc {
+    font-variant-caps: small-caps;
+  }
 }
 
 .missing {

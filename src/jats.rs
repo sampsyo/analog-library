@@ -117,6 +117,8 @@ fn trans_tag(tag: &[u8]) -> Option<&'static str> {
         Some("s")
     } else if tag == b"jats:monospace" {
         Some("code")
+    } else if tag == b"jats:sc" {
+        Some("sc")
     } else {
         None
     }
