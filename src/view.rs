@@ -108,6 +108,14 @@ pub fn paper(paper: Paper, alternates: &[Paper], abstract_: Abstract) -> Markup 
                 (". ")
                 (paper.published)
                 (".")
+            } @else if paper.type_ == "book-chapter" {
+                ("In ")
+                i {
+                    (paper.container_title.first().unwrap_or("Unknown Book"))
+                }
+                (". ")
+                (paper.published)
+                (".")
             }
         }
         @if !alternates.is_empty() {

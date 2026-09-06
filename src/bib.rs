@@ -5,6 +5,7 @@ use std::fmt::{Display, Write};
 enum Type {
     Article,
     InProceedings,
+    InBook,
     Misc,
 }
 
@@ -17,6 +18,8 @@ impl Type {
             Self::Article
         } else if type_ == "proceedings-article" {
             Self::InProceedings
+        } else if type_ == "book-chapter" {
+            Self::InBook
         } else {
             Self::Misc
         }
@@ -29,6 +32,7 @@ impl Display for Type {
             Type::Article => f.write_str("article"),
             Type::InProceedings => f.write_str("inproceedings"),
             Type::Misc => f.write_str("misc"),
+            Type::InBook => f.write_str("inbook"),
         }
     }
 }
@@ -54,6 +58,11 @@ impl<'a> Display for Entry<'a> {
             }
             Type::InProceedings => {
                 write_str_opt(f, "booktitle", self.0.event_title())?;
+                write_pair(f, "year", self.0.published.year())?;
+            }
+            Type::InBook => {
+                write_str_opt(f, "booktitle", self.0.container_title.first())?;
+                write_str(f, "publisher", &self.0.publisher)?;
                 write_pair(f, "year", self.0.published.year())?;
             }
             _ => {
