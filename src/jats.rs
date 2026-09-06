@@ -118,7 +118,7 @@ fn trans_tag(tag: &[u8]) -> Option<&'static str> {
             return Some(html);
         }
     }
-    return None;
+    None
 }
 
 /// Check if we should ignore the entire contents of a given JATS tag.
