@@ -234,7 +234,7 @@ impl Context {
             let (url, time, json) = entry?;
             if url.starts_with(b"https://api.crossref.org/v1/works/") {
                 match serde_json::from_slice::<crossref::Paper>(json.as_ref()) {
-                    Ok(paper) => println!("{} {} {}", time, &paper.doi, paper.title()),
+                    Ok(paper) => println!("{} {} {}", time, paper.doi, paper.title()),
                     Err(_) => println!(
                         "{} deserialization error: {}",
                         time,
